@@ -18,9 +18,9 @@ import (
 	redigo "github.com/garyburd/redigo/redis"
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/i2c"
+	"github.com/platinasystems/log"
 	"github.com/platinasystems/redis"
 	"github.com/platinasystems/redis/publisher"
-	"github.com/platinasystems/log"
 	"github.com/platinasystems/vnet"
 	"github.com/platinasystems/vnet/devices/optics/sfp"
 	fe1_platform "github.com/platinasystems/vnet/platforms/fe1"
@@ -35,6 +35,8 @@ const (
 
 	alphaParameter     = "/sys/module/platina_mk1/parameters/alpha"
 	provisionParameter = "/sys/module/platina_mk1/parameters/provision"
+
+	machine = "goes-platina-mk1"
 )
 
 var pub *publisher.Publisher
@@ -63,8 +65,7 @@ func PortBase() int {
 				base = 0
 			}
 		} else {
-			s, err := redis.Hget("goes-platina-mk1",
-				"eeprom.DeviceVersion")
+			s, err := redis.Hget(machine, "eeprom.DeviceVersion")
 			if err == nil {
 				var ver int
 				_, err = fmt.Sscan(s, &ver)
@@ -386,13 +387,13 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 				if firstPort {
 					ifname := IfnameOf(port, 0)
 					start := time.Now()
-					_, err := redis.Hget(machine.Name, "vnet."+ifname+".speed")
+					_, err := redis.Hget(machine, "vnet."+ifname+".speed")
 					for err != nil {
 						if time.Since(start) >= 2*time.Second {
 							log.Print("hget timeout: ", err)
 							break
 						}
-						_, err = redis.Hget(machine.Name, "vnet."+ifname+".speed")
+						_, err = redis.Hget(machine, "vnet."+ifname+".speed")
 						//ignore this value, just used to check if redis and vnet are up
 					}
 				}
@@ -404,7 +405,7 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 						continue
 					}
 
-					speed, err := redis.Hget(machine.Name, "vnet."+ifname+".speed")
+					speed, err := redis.Hget(machine, "vnet."+ifname+".speed")
 					if err != nil {
 						continue
 					} else {
@@ -414,9 +415,9 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 							if speed == "100g" {
 								//100g, cl91 needs to be enabled per ieee spec
 								//100g should take up all 4 lanes so setting apply to first lane only
-								redis.Hset(machine.Name, "vnet."+ifname+".fec", "cl91")
+								redis.Hset(machine, "vnet."+ifname+".fec", "cl91")
 							} else {
-								fec, err := redis.Hget(machine.Name, "vnet."+ifname+".fec")
+								fec, err := redis.Hget(machine, "vnet."+ifname+".fec")
 								if err != nil {
 									fmt.Printf("qsfp.go signalChange error getting fec %v\n", err)
 									continue
@@ -424,12 +425,12 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 								fec = strings.ToLower(fec)
 								if (speed == "40g") || (speed == "20g") || (speed == "10g") { //none or cl74 are valid, default to none if neither
 									if (fec != "cl74") && (fec != "none") {
-										redis.Hset(machine.Name, "vnet."+ifname+".fec", "none")
+										redis.Hset(machine, "vnet."+ifname+".fec", "none")
 									}
 								}
 								if speed == "1g" { //only none is valid
 									if fec != "none" {
-										redis.Hset(machine.Name, "vnet."+ifname+".fec", "none")
+										redis.Hset(machine, "vnet."+ifname+".fec", "none")
 									}
 								}
 								//50g, 25g can accept none, cl74, or cl94(gen2 fe1 only)
@@ -439,31 +440,31 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 							//set media to copper triggers link training and should be done after fec setting
 							//training will cause remote side to align phase even if tx FIR setting do not change
 							{
-								media, err := redis.Hget(machine.Name, "vnet."+ifname+".media")
+								media, err := redis.Hget(machine, "vnet."+ifname+".media")
 								if err != nil {
 									fmt.Printf("qsfp.go signalChange error getting media %v\n", err)
 									continue
 								}
 								media = strings.ToLower(media)
 								if media != "copper" {
-									redis.Hset(machine.Name, "vnet."+ifname+".media", "copper")
+									redis.Hset(machine, "vnet."+ifname+".media", "copper")
 								}
 							}
 						} else if i == 0 {
 							// not copper (i.e. no "CR" in the compliance string)
 							// these optics detection are for 4-lane optical module; therefore setting apply to first lane only
 							if strings.Contains(q.Ident.Compliance, "40G") {
-								redis.Hset(machine.Name, "vnet."+ifname+".speed", "40g")
-								redis.Hset(machine.Name, "vnet."+ifname+".media", "fiber")
-								redis.Hset(machine.Name, "vnet."+ifname+".fec", "none")
+								redis.Hset(machine, "vnet."+ifname+".speed", "40g")
+								redis.Hset(machine, "vnet."+ifname+".media", "fiber")
+								redis.Hset(machine, "vnet."+ifname+".fec", "none")
 							} else if strings.Contains(q.Ident.Compliance, "100GBASE-SR4") {
-								redis.Hset(machine.Name, "vnet."+ifname+".speed", "100g")
-								redis.Hset(machine.Name, "vnet."+ifname+".media", "fiber")
-								redis.Hset(machine.Name, "vnet."+ifname+".fec", "cl91")
+								redis.Hset(machine, "vnet."+ifname+".speed", "100g")
+								redis.Hset(machine, "vnet."+ifname+".media", "fiber")
+								redis.Hset(machine, "vnet."+ifname+".fec", "cl91")
 							} else if strings.Contains(q.Ident.Compliance, "100G") {
-								redis.Hset(machine.Name, "vnet."+ifname+".speed", "100g")
-								redis.Hset(machine.Name, "vnet."+ifname+".media", "fiber")
-								redis.Hset(machine.Name, "vnet."+ifname+".fec", "none")
+								redis.Hset(machine, "vnet."+ifname+".speed", "100g")
+								redis.Hset(machine, "vnet."+ifname+".media", "fiber")
+								redis.Hset(machine, "vnet."+ifname+".fec", "none")
 							}
 							// if not above optics, leave speed/media/fec config alone to what was manually configured and do not change
 						}
@@ -811,7 +812,7 @@ func (m *qsfpMain) poll() {
 
 									if update {
 										if bmcIpv6LinkLocalRedis == "" {
-											m, err := redis.Hget(machine.Name, "eeprom.BaseEthernetAddress")
+											m, err := redis.Hget(machine, "eeprom.BaseEthernetAddress")
 											if err == nil {
 												o := strings.Split(m, ":")
 												b, _ := hex.DecodeString(o[0])
@@ -823,7 +824,7 @@ func (m *qsfpMain) poll() {
 										if bmcIpv6LinkLocalRedis != "" {
 											d, err := redigo.Dial("tcp", bmcIpv6LinkLocalRedis)
 											if err == nil {
-												d.Do("HSET", machine.Name, "qsfp.temp.units.C", q.Mon.Temperature)
+												d.Do("HSET", machine, "qsfp.temp.units.C", q.Mon.Temperature)
 												d.Close()
 											}
 										}
