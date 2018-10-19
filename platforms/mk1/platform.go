@@ -8,7 +8,6 @@ import (
 	"github.com/platinasystems/i2c"
 	"github.com/platinasystems/vnet"
 	"github.com/platinasystems/vnet/devices/bus/pci"
-	"github.com/platinasystems/vnet/devices/ethernet/ixge"
 	fe1 "github.com/platinasystems/vnet/devices/ethernet/switch/fe1"
 	"github.com/platinasystems/vnet/ethernet"
 	"github.com/platinasystems/vnet/gre"
