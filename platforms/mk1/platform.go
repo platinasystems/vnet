@@ -19,8 +19,6 @@ import (
 	fe1_platform "github.com/platinasystems/vnet/platforms/fe1"
 	"github.com/platinasystems/vnet/unix"
 
-	"fmt"
-	"net"
 	"os"
 	"time"
 )
