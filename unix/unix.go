@@ -7,7 +7,7 @@ package unix
 import (
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/elib/parse"
-	"github.com/platinasystems/go/internal/netlink"
+	"github.com/platinasystems/vnet/netlink"
 	"github.com/platinasystems/vnet"
 
 	"regexp"

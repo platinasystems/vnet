@@ -18,7 +18,7 @@ import (
 	redigo "github.com/garyburd/redigo/redis"
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/go/internal/i2c"
-	"github.com/platinasystems/go/internal/log"
+	"github.com/platinasystems/log"
 	"github.com/platinasystems/go/internal/machine"
 	"github.com/platinasystems/go/internal/redis"
 	"github.com/platinasystems/go/internal/redis/publisher"

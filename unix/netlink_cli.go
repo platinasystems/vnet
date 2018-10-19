@@ -11,7 +11,7 @@ import (
 
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/elib/cli"
-	"github.com/platinasystems/go/internal/netlink"
+	"github.com/platinasystems/vnet/netlink"
 	"github.com/platinasystems/vnet/ip"
 	"github.com/platinasystems/vnet/ip4"
 )

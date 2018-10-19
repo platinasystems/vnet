@@ -7,7 +7,7 @@ package unix
 import (
 	"github.com/platinasystems/elib/elog"
 	"github.com/platinasystems/elib/loop"
-	"github.com/platinasystems/go/internal/netlink"
+	"github.com/platinasystems/vnet/netlink"
 	"github.com/platinasystems/vnet"
 	"github.com/platinasystems/vnet/ethernet"
 	"github.com/platinasystems/vnet/gre"

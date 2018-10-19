@@ -6,7 +6,7 @@ package sfp
 
 import (
 	"github.com/platinasystems/elib/hw"
-	"github.com/platinasystems/go/internal/log"
+	"github.com/platinasystems/log"
 
 	"fmt"
 	"strconv"

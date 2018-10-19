@@ -9,7 +9,7 @@ package unix
 import (
 	"github.com/platinasystems/elib/elog"
 	"github.com/platinasystems/elib/iomux"
-	"github.com/platinasystems/go/internal/netlink"
+	"github.com/platinasystems/vnet/netlink"
 	"github.com/platinasystems/vnet"
 	"github.com/platinasystems/vnet/ip4"
 
