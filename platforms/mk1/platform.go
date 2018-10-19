@@ -5,7 +5,7 @@
 package mk1
 
 import (
-	"github.com/platinasystems/go/internal/i2c"
+	"github.com/platinasystems/i2c"
 	"github.com/platinasystems/vnet"
 	"github.com/platinasystems/vnet/devices/bus/pci"
 	"github.com/platinasystems/vnet/devices/ethernet/ixge"
