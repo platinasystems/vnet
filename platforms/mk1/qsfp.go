@@ -18,10 +18,9 @@ import (
 	redigo "github.com/garyburd/redigo/redis"
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/go/internal/i2c"
-	"github.com/platinasystems/log"
-	"github.com/platinasystems/go/internal/machine"
 	"github.com/platinasystems/go/internal/redis"
 	"github.com/platinasystems/go/internal/redis/publisher"
+	"github.com/platinasystems/log"
 	"github.com/platinasystems/vnet"
 	"github.com/platinasystems/vnet/devices/optics/sfp"
 	fe1_platform "github.com/platinasystems/vnet/platforms/fe1"
@@ -64,7 +63,7 @@ func PortBase() int {
 				base = 0
 			}
 		} else {
-			s, err := redis.Hget(machine.Name,
+			s, err := redis.Hget("goes-platina-mk1",
 				"eeprom.DeviceVersion")
 			if err == nil {
 				var ver int
