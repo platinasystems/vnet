@@ -16,7 +16,7 @@ import (
 	"time"
 
 	redigo "github.com/garyburd/redigo/redis"
-	"github.com/platinasystems/go/elib"
+	"github.com/platinasystems/elib"
 	"github.com/platinasystems/go/internal/i2c"
 	"github.com/platinasystems/go/internal/log"
 	"github.com/platinasystems/go/internal/machine"

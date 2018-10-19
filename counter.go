@@ -6,7 +6,7 @@
 package vnet
 
 import (
-	"github.com/platinasystems/go/elib"
+	"github.com/platinasystems/elib"
 )
 
 // Array of single counters
@@ -21,7 +21,7 @@ type Counters struct {
 	valuesLastClear elib.Uint64Vec
 }
 
-//go:generate gentemplate -d Package=vnet -id countersVec -d VecType=CountersVec -d Type=Counters github.com/platinasystems/go/elib/vec.tmpl
+//go:generate gentemplate -d Package=vnet -id countersVec -d VecType=CountersVec -d Type=Counters github.com/platinasystems/elib/vec.tmpl
 
 func (c *Counters) Validate(i uint) {
 	c.mini.Validate(i)
@@ -109,8 +109,8 @@ func (c *miniCombinedCounter) Zero() {
 	c.byteDiff = 0
 }
 
-//go:generate gentemplate -d Package=vnet -id miniCombinedCounter -d VecType=miniCombinedCounterVec -d Type=miniCombinedCounter github.com/platinasystems/go/elib/vec.tmpl
-//go:generate gentemplate -d Package=vnet -id CombinedCounter -d VecType=CombinedCounterVec -d Type=CombinedCounter github.com/platinasystems/go/elib/vec.tmpl
+//go:generate gentemplate -d Package=vnet -id miniCombinedCounter -d VecType=miniCombinedCounterVec -d Type=miniCombinedCounter github.com/platinasystems/elib/vec.tmpl
+//go:generate gentemplate -d Package=vnet -id CombinedCounter -d VecType=CombinedCounterVec -d Type=CombinedCounter github.com/platinasystems/elib/vec.tmpl
 
 type CombinedCounters struct {
 	// 64 bit packet and byte counters.
@@ -127,7 +127,7 @@ type CombinedCounters struct {
 	avePacketSizeRecomputeInterval uint
 }
 
-//go:generate gentemplate -d Package=vnet -id combinedCountersVec -d VecType=CombinedCountersVec -d Type=CombinedCounters github.com/platinasystems/go/elib/vec.tmpl
+//go:generate gentemplate -d Package=vnet -id combinedCountersVec -d VecType=CombinedCountersVec -d Type=CombinedCounters github.com/platinasystems/elib/vec.tmpl
 
 func (c *CombinedCounters) Validate(i uint) {
 	c.values.Validate(i)

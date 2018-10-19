@@ -5,7 +5,7 @@
 package sfp
 
 import (
-	"github.com/platinasystems/go/elib"
+	"github.com/platinasystems/elib"
 )
 
 // SFP Ids from eeprom.

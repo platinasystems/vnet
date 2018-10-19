@@ -7,8 +7,8 @@
 package unix
 
 import (
-	"github.com/platinasystems/go/elib/elog"
-	"github.com/platinasystems/go/elib/iomux"
+	"github.com/platinasystems/elib/elog"
+	"github.com/platinasystems/elib/iomux"
 	"github.com/platinasystems/go/internal/netlink"
 	"github.com/platinasystems/go/vnet"
 	"github.com/platinasystems/go/vnet/ip4"

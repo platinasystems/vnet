@@ -9,8 +9,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/platinasystems/go/elib"
-	"github.com/platinasystems/go/elib/cli"
+	"github.com/platinasystems/elib"
+	"github.com/platinasystems/elib/cli"
 	"github.com/platinasystems/go/internal/netlink"
 	"github.com/platinasystems/go/vnet/ip"
 	"github.com/platinasystems/go/vnet/ip4"

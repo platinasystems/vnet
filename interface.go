@@ -5,10 +5,10 @@
 package vnet
 
 import (
-	"github.com/platinasystems/go/elib/cli"
-	"github.com/platinasystems/go/elib/elog"
-	"github.com/platinasystems/go/elib/loop"
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib/cli"
+	"github.com/platinasystems/elib/elog"
+	"github.com/platinasystems/elib/loop"
+	"github.com/platinasystems/elib/parse"
 
 	"errors"
 	"fmt"
@@ -53,7 +53,7 @@ type HwIf struct {
 	n []outputInterfaceNoder
 }
 
-//go:generate gentemplate -d Package=vnet -id HwIf -d PoolType=hwIferPool -d Type=HwInterfacer -d Data=elts github.com/platinasystems/go/elib/pool.tmpl
+//go:generate gentemplate -d Package=vnet -id HwIf -d PoolType=hwIferPool -d Type=HwInterfacer -d Data=elts github.com/platinasystems/elib/pool.tmpl
 
 type IfIndex uint32
 type LaneMask uint32
@@ -226,7 +226,7 @@ type SwIf struct {
 	id IfId
 }
 
-//go:generate gentemplate -d Package=vnet -id SwIf -d PoolType=swIfPool -d Type=SwIf -d Data=elts github.com/platinasystems/go/elib/pool.tmpl
+//go:generate gentemplate -d Package=vnet -id SwIf -d PoolType=swIfPool -d Type=SwIf -d Data=elts github.com/platinasystems/elib/pool.tmpl
 
 func (m *Vnet) addDelSwInterface(siʹ, supSi Si, kind SwIfKind, id IfId, isDel bool) (si Si) {
 	si = siʹ
@@ -559,7 +559,7 @@ func (m *interfaceMain) init() {
 	m.timeLastClear = time.Now()
 }
 
-//go:generate gentemplate -d Package=vnet -id ifThread -d VecType=ifThreadVec -d Type=*InterfaceThread github.com/platinasystems/go/elib/vec.tmpl
+//go:generate gentemplate -d Package=vnet -id ifThread -d VecType=ifThreadVec -d Type=*InterfaceThread github.com/platinasystems/elib/vec.tmpl
 
 func (v *Vnet) RegisterAndProvisionHwInterface(h HwInterfacer, provision bool, format string, args ...interface{}) (err error) {
 	hi := Hi(v.hwIferPool.GetIndex())
@@ -783,12 +783,12 @@ type HwIfAddDelHook func(v *Vnet, hi Hi, isDel bool) error
 type HwIfLinkUpDownHook func(v *Vnet, hi Hi, isUp bool) error
 type HwIfProvisionHook func(v *Vnet, hi Hi, isProvisioned bool) error
 
-//go:generate gentemplate -id SwIfAddDelHook -d Package=vnet -d DepsType=SwIfAddDelHookVec -d Type=SwIfAddDelHook -d Data=hooks github.com/platinasystems/go/elib/dep/dep.tmpl
-//go:generate gentemplate -id SwIfAdminUpDownHook -d Package=vnet -d DepsType=SwIfAdminUpDownHookVec -d Type=SwIfAdminUpDownHook -d Data=hooks github.com/platinasystems/go/elib/dep/dep.tmpl
-//go:generate gentemplate -id HwIfAddDelHook -d Package=vnet -d DepsType=HwIfAddDelHookVec -d Type=HwIfAddDelHook -d Data=hooks github.com/platinasystems/go/elib/dep/dep.tmpl
-//go:generate gentemplate -id HwIfLinkUpDownHook -d Package=vnet -d DepsType=HwIfLinkUpDownHookVec -d Type=HwIfLinkUpDownHook -d Data=hooks github.com/platinasystems/go/elib/dep/dep.tmpl
-//go:generate gentemplate -id HwIfProvisionHook -d Package=vnet -d DepsType=HwIfProvisionHookVec -d Type=HwIfProvisionHook -d Data=hooks github.com/platinasystems/go/elib/dep/dep.tmpl
-//go:generate gentemplate -id SwIfCounterSyncHookVec -d Package=vnet -d DepsType=SwIfCounterSyncHookVec -d Type=SwIfCounterSyncHook -d Data=hooks github.com/platinasystems/go/elib/dep/dep.tmpl
+//go:generate gentemplate -id SwIfAddDelHook -d Package=vnet -d DepsType=SwIfAddDelHookVec -d Type=SwIfAddDelHook -d Data=hooks github.com/platinasystems/elib/dep/dep.tmpl
+//go:generate gentemplate -id SwIfAdminUpDownHook -d Package=vnet -d DepsType=SwIfAdminUpDownHookVec -d Type=SwIfAdminUpDownHook -d Data=hooks github.com/platinasystems/elib/dep/dep.tmpl
+//go:generate gentemplate -id HwIfAddDelHook -d Package=vnet -d DepsType=HwIfAddDelHookVec -d Type=HwIfAddDelHook -d Data=hooks github.com/platinasystems/elib/dep/dep.tmpl
+//go:generate gentemplate -id HwIfLinkUpDownHook -d Package=vnet -d DepsType=HwIfLinkUpDownHookVec -d Type=HwIfLinkUpDownHook -d Data=hooks github.com/platinasystems/elib/dep/dep.tmpl
+//go:generate gentemplate -id HwIfProvisionHook -d Package=vnet -d DepsType=HwIfProvisionHookVec -d Type=HwIfProvisionHook -d Data=hooks github.com/platinasystems/elib/dep/dep.tmpl
+//go:generate gentemplate -id SwIfCounterSyncHookVec -d Package=vnet -d DepsType=SwIfCounterSyncHookVec -d Type=SwIfCounterSyncHook -d Data=hooks github.com/platinasystems/elib/dep/dep.tmpl
 
 func (m *interfaceMain) RegisterSwIfAddDelHook(h SwIfAddDelHook) {
 	m.swIfAddDelHooks.Add(h)

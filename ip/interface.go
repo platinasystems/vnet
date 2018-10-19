@@ -14,7 +14,7 @@ type IfAddr uint32
 
 const IfAddrNil = ^IfAddr(0)
 
-//go:generate gentemplate -d Package=ip -id IfAddr -d VecType=IfAddrVec -d Type=IfAddr github.com/platinasystems/go/elib/vec.tmpl
+//go:generate gentemplate -d Package=ip -id IfAddr -d VecType=IfAddrVec -d Type=IfAddr github.com/platinasystems/elib/vec.tmpl
 
 type IfAddress struct {
 	// ip4/ip6 address and map key plus length.
@@ -34,7 +34,7 @@ func (i IfAddr) String(m *Main) string {
 	return a.Si.Name(m.v)
 }
 
-//go:generate gentemplate -d Package=ip -id ifaddress -d PoolType=ifAddressPool -d Type=IfAddress -d Data=ifAddrs github.com/platinasystems/go/elib/pool.tmpl
+//go:generate gentemplate -d Package=ip -id ifaddress -d PoolType=ifAddressPool -d Type=IfAddress -d Data=ifAddrs github.com/platinasystems/elib/pool.tmpl
 
 type ifAddrMapKey struct {
 	a Address

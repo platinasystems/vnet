@@ -5,9 +5,9 @@
 package ip
 
 import (
-	"github.com/platinasystems/go/elib"
-	"github.com/platinasystems/go/elib/dep"
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib"
+	"github.com/platinasystems/elib/dep"
+	"github.com/platinasystems/elib/parse"
 	"github.com/platinasystems/go/vnet"
 	"github.com/platinasystems/go/vnet/internal/dbgvnet"
 
@@ -169,7 +169,7 @@ func (a Adj) String() string {
 	}
 }
 
-//go:generate gentemplate -d Package=ip -id adjacencyHeap -d HeapType=adjacencyHeap -d Data=elts -d Type=Adjacency github.com/platinasystems/go/elib/heap.tmpl
+//go:generate gentemplate -d Package=ip -id adjacencyHeap -d HeapType=adjacencyHeap -d Data=elts -d Type=Adjacency github.com/platinasystems/elib/heap.tmpl
 
 type adjacencyThread struct {
 	// Packet/byte counters for each adjacency.
@@ -195,9 +195,9 @@ type adjSyncCounterHook func(m *Main)
 type AdjGetCounterHandler func(tag string, v vnet.CombinedCounter)
 type adjGetCounterHook func(m *Main, adj Adj, f AdjGetCounterHandler, clear bool)
 
-//go:generate gentemplate -id adjAddDelHook -d Package=ip -d DepsType=adjAddDelHookVec -d Type=adjAddDelHook -d Data=adjAddDelHooks github.com/platinasystems/go/elib/dep/dep.tmpl
-//go:generate gentemplate -id adjSyncHook -d Package=ip -d DepsType=adjSyncCounterHookVec -d Type=adjSyncCounterHook -d Data=adjSyncCounterHooks github.com/platinasystems/go/elib/dep/dep.tmpl
-//go:generate gentemplate -id adjGetCounterHook -d Package=ip -d DepsType=adjGetCounterHookVec -d Type=adjGetCounterHook -d Data=adjGetCounterHooks github.com/platinasystems/go/elib/dep/dep.tmpl
+//go:generate gentemplate -id adjAddDelHook -d Package=ip -d DepsType=adjAddDelHookVec -d Type=adjAddDelHook -d Data=adjAddDelHooks github.com/platinasystems/elib/dep/dep.tmpl
+//go:generate gentemplate -id adjSyncHook -d Package=ip -d DepsType=adjSyncCounterHookVec -d Type=adjSyncCounterHook -d Data=adjSyncCounterHooks github.com/platinasystems/elib/dep/dep.tmpl
+//go:generate gentemplate -id adjGetCounterHook -d Package=ip -d DepsType=adjGetCounterHookVec -d Type=adjGetCounterHook -d Data=adjGetCounterHooks github.com/platinasystems/elib/dep/dep.tmpl
 
 type NextHopWeight uint32
 
@@ -210,9 +210,9 @@ type nextHop struct {
 	Weight NextHopWeight
 }
 
-//go:generate gentemplate -d Package=ip -id nextHopHeap -d HeapType=nextHopHeap -d Data=elts -d Type=nextHop github.com/platinasystems/go/elib/heap.tmpl
-//go:generate gentemplate -d Package=ip -id nextHopVec -d VecType=nextHopVec -d Type=nextHop github.com/platinasystems/go/elib/vec.tmpl
-//go:generate gentemplate -d Package=ip -id multipathAdjacencyPool -d PoolType=multipathAdjacencyPool -d Type=multipathAdjacency -d Data=elts github.com/platinasystems/go/elib/pool.tmpl
+//go:generate gentemplate -d Package=ip -id nextHopHeap -d HeapType=nextHopHeap -d Data=elts -d Type=nextHop github.com/platinasystems/elib/heap.tmpl
+//go:generate gentemplate -d Package=ip -id nextHopVec -d VecType=nextHopVec -d Type=nextHop github.com/platinasystems/elib/vec.tmpl
+//go:generate gentemplate -d Package=ip -id multipathAdjacencyPool -d PoolType=multipathAdjacencyPool -d Type=multipathAdjacency -d Data=elts github.com/platinasystems/elib/pool.tmpl
 
 type nextHopHashValue struct {
 	heapOffset uint32

@@ -5,7 +5,7 @@
 package ip4
 
 import (
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib/parse"
 	"github.com/platinasystems/go/vnet"
 	"github.com/platinasystems/go/vnet/ethernet"
 	"github.com/platinasystems/go/vnet/ip"

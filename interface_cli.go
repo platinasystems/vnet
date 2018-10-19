@@ -5,9 +5,9 @@
 package vnet
 
 import (
-	"github.com/platinasystems/go/elib"
-	"github.com/platinasystems/go/elib/cli"
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib"
+	"github.com/platinasystems/elib/cli"
+	"github.com/platinasystems/elib/parse"
 	"github.com/platinasystems/xeth"
 
 	"fmt"

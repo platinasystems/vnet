@@ -5,10 +5,10 @@
 package unix
 
 import (
-	"github.com/platinasystems/go/elib"
-	"github.com/platinasystems/go/elib/cli"
-	"github.com/platinasystems/go/elib/elog"
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib"
+	"github.com/platinasystems/elib/cli"
+	"github.com/platinasystems/elib/elog"
+	"github.com/platinasystems/elib/parse"
 	"github.com/platinasystems/go/internal/netlink"
 	"github.com/platinasystems/go/vnet"
 	"github.com/platinasystems/go/vnet/ethernet"
@@ -287,7 +287,7 @@ type net_namespace struct {
 	interface_by_name  map[string]*net_namespace_interface
 }
 
-//go:generate gentemplate -d Package=unix -id net_namespace -d PoolType=net_namespace_pool -d Type=*net_namespace -d Data=entries github.com/platinasystems/go/elib/pool.tmpl
+//go:generate gentemplate -d Package=unix -id net_namespace -d PoolType=net_namespace_pool -d Type=*net_namespace -d Data=entries github.com/platinasystems/elib/pool.tmpl
 
 type net_namespace_main struct {
 	m                                *Main

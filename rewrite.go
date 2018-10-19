@@ -5,9 +5,9 @@
 package vnet
 
 import (
-	"github.com/platinasystems/go/elib"
-	"github.com/platinasystems/go/elib/hw"
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib"
+	"github.com/platinasystems/elib/hw"
+	"github.com/platinasystems/elib/parse"
 
 	"unsafe"
 )

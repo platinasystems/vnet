@@ -5,7 +5,7 @@
 package pci
 
 import (
-	"github.com/platinasystems/go/elib/hw/pci"
+	"github.com/platinasystems/elib/hw/pci"
 	"github.com/platinasystems/go/vnet"
 )
 

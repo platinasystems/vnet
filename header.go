@@ -5,7 +5,7 @@
 package vnet
 
 import (
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib/parse"
 
 	"fmt"
 	"unsafe"

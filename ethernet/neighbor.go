@@ -5,7 +5,7 @@
 package ethernet
 
 import (
-	"github.com/platinasystems/go/elib/cpu"
+	"github.com/platinasystems/elib/cpu"
 	"github.com/platinasystems/go/vnet"
 	"github.com/platinasystems/go/vnet/internal/dbgvnet"
 	"github.com/platinasystems/go/vnet/ip"
@@ -50,7 +50,7 @@ type ipNeighbor struct {
 	lastTimeUsed cpu.Time
 }
 
-//go:generate gentemplate -d Package=ethernet -id ipNeighbor -d PoolType=ipNeighborPool -d Data=neighbors -d Type=ipNeighbor github.com/platinasystems/go/elib/pool.tmpl
+//go:generate gentemplate -d Package=ethernet -id ipNeighbor -d PoolType=ipNeighborPool -d Data=neighbors -d Type=ipNeighbor github.com/platinasystems/elib/pool.tmpl
 
 var ErrDelUnknownNeighbor = errors.New("delete unknown neighbor")
 

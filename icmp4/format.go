@@ -1,7 +1,7 @@
 package icmp4
 
 import (
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib/parse"
 )
 
 func (h *Header) Parse(in *parse.Input) {

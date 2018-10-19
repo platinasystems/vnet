@@ -5,7 +5,7 @@
 package sfp
 
 import (
-	"github.com/platinasystems/go/elib/hw"
+	"github.com/platinasystems/elib/hw"
 	"github.com/platinasystems/go/internal/log"
 
 	"fmt"

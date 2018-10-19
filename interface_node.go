@@ -5,9 +5,9 @@
 package vnet
 
 import (
-	"github.com/platinasystems/go/elib/cpu"
-	"github.com/platinasystems/go/elib/elog"
-	"github.com/platinasystems/go/elib/loop"
+	"github.com/platinasystems/elib/cpu"
+	"github.com/platinasystems/elib/elog"
+	"github.com/platinasystems/elib/loop"
 
 	"fmt"
 )

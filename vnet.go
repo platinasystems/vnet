@@ -7,11 +7,11 @@ package vnet
 import (
 	"net"
 
-	"github.com/platinasystems/go/elib"
-	"github.com/platinasystems/go/elib/cpu"
-	"github.com/platinasystems/go/elib/dep"
-	"github.com/platinasystems/go/elib/loop"
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib"
+	"github.com/platinasystems/elib/cpu"
+	"github.com/platinasystems/elib/dep"
+	"github.com/platinasystems/elib/loop"
+	"github.com/platinasystems/elib/parse"
 	"github.com/platinasystems/xeth"
 )
 
@@ -169,7 +169,7 @@ func (x RxTx) String() (s string) {
 	return elib.Stringer(rxTxStrings[:], int(x))
 }
 
-//go:generate gentemplate -id initHook -d Package=vnet -d DepsType=initHookVec -d Type=initHook -d Data=hooks github.com/platinasystems/go/elib/dep/dep.tmpl
+//go:generate gentemplate -id initHook -d Package=vnet -d DepsType=initHookVec -d Type=initHook -d Data=hooks github.com/platinasystems/elib/dep/dep.tmpl
 type initHook func(v *Vnet)
 
 var initHooks initHookVec

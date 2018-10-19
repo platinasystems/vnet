@@ -5,11 +5,11 @@
 package pg
 
 import (
-	"github.com/platinasystems/go/elib"
-	"github.com/platinasystems/go/elib/cli"
-	"github.com/platinasystems/go/elib/cpu"
-	"github.com/platinasystems/go/elib/elog"
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib"
+	"github.com/platinasystems/elib/cli"
+	"github.com/platinasystems/elib/cpu"
+	"github.com/platinasystems/elib/elog"
+	"github.com/platinasystems/elib/parse"
 	"github.com/platinasystems/go/vnet"
 
 	"fmt"
@@ -20,7 +20,7 @@ type Streamer interface {
 	Finalize(refs []vnet.Ref, data_offset uint) bool
 }
 
-//go:generate gentemplate -d Package=pg -id stream -d PoolType=stream_pool -d Type=Streamer -d Data=elts github.com/platinasystems/go/elib/pool.tmpl
+//go:generate gentemplate -d Package=pg -id stream -d PoolType=stream_pool -d Type=Streamer -d Data=elts github.com/platinasystems/elib/pool.tmpl
 
 func (s *Stream) get_stream() *Stream                                    { return s }
 func (s *Stream) Finalize(r []vnet.Ref, data_offset uint) (changed bool) { return }

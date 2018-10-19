@@ -5,7 +5,7 @@
 package ip4
 
 import (
-	"github.com/platinasystems/go/elib/cli"
+	"github.com/platinasystems/elib/cli"
 	"github.com/platinasystems/go/vnet"
 	"github.com/platinasystems/go/vnet/ip"
 
@@ -15,7 +15,7 @@ import (
 
 type fibShowUsageHook func(w cli.Writer)
 
-//go:generate gentemplate -id FibShowUsageHook -d Package=ip4 -d DepsType=fibShowUsageHookVec -d Type=fibShowUsageHook -d Data=hooks github.com/platinasystems/go/elib/dep/dep.tmpl
+//go:generate gentemplate -id FibShowUsageHook -d Package=ip4 -d DepsType=fibShowUsageHookVec -d Type=fibShowUsageHook -d Data=hooks github.com/platinasystems/elib/dep/dep.tmpl
 
 type showFibConfig struct {
 	detail      bool

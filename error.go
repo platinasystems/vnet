@@ -5,10 +5,10 @@
 package vnet
 
 import (
-	"github.com/platinasystems/go/elib"
-	"github.com/platinasystems/go/elib/cli"
-	"github.com/platinasystems/go/elib/elog"
-	"github.com/platinasystems/go/elib/loop"
+	"github.com/platinasystems/elib"
+	"github.com/platinasystems/elib/cli"
+	"github.com/platinasystems/elib/elog"
+	"github.com/platinasystems/elib/loop"
 
 	"fmt"
 	"sort"
@@ -28,8 +28,8 @@ type errorThread struct {
 	cache           ErrorRef
 }
 
-//go:generate gentemplate -d Package=vnet -id errorThread -d VecType=errorThreadVec -d Type=*errorThread github.com/platinasystems/go/elib/vec.tmpl
-//go:generate gentemplate -d Package=vnet -id error -d VecType=errVec -d Type=err github.com/platinasystems/go/elib/vec.tmpl
+//go:generate gentemplate -d Package=vnet -id errorThread -d VecType=errorThreadVec -d Type=*errorThread github.com/platinasystems/elib/vec.tmpl
+//go:generate gentemplate -d Package=vnet -id error -d VecType=errVec -d Type=err github.com/platinasystems/elib/vec.tmpl
 
 type errorNode struct {
 	OutputNode

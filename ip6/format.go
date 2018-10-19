@@ -5,7 +5,7 @@
 package ip6
 
 import (
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib/parse"
 
 	"fmt"
 	"net"

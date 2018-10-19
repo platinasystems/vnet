@@ -38,7 +38,7 @@ type ply struct {
 	poolIndex uint
 }
 
-//go:generate gentemplate -d Package=ip4 -id ply -d PoolType=plyPool -d Type=ply -d Data=plys github.com/platinasystems/go/elib/pool.tmpl
+//go:generate gentemplate -d Package=ip4 -id ply -d PoolType=plyPool -d Type=ply -d Data=plys github.com/platinasystems/elib/pool.tmpl
 
 type mtrie struct {
 	// Pool of plies.  Index zero is root ply.

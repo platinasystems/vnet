@@ -5,10 +5,10 @@
 package vnet
 
 import (
-	"github.com/platinasystems/go/elib"
-	"github.com/platinasystems/go/elib/dep"
-	"github.com/platinasystems/go/elib/hw"
-	"github.com/platinasystems/go/elib/loop"
+	"github.com/platinasystems/elib"
+	"github.com/platinasystems/elib/dep"
+	"github.com/platinasystems/elib/hw"
+	"github.com/platinasystems/elib/loop"
 
 	"fmt"
 )
@@ -208,7 +208,7 @@ func (q *enqueue) Put4(r0, r1, r2, r3 *Ref, x0, x1, x2, x3 uint) {
 	}
 }
 
-//go:generate gentemplate -d Package=vnet -id enqueue -d VecType=enqueue_vec -d Type=*enqueue github.com/platinasystems/go/elib/vec.tmpl
+//go:generate gentemplate -d Package=vnet -id enqueue -d VecType=enqueue_vec -d Type=*enqueue github.com/platinasystems/elib/vec.tmpl
 
 type InOutNode struct {
 	Node

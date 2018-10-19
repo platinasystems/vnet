@@ -5,7 +5,7 @@
 package cli
 
 import (
-	"github.com/platinasystems/go/elib/cli"
+	"github.com/platinasystems/elib/cli"
 	"github.com/platinasystems/go/vnet"
 	"github.com/platinasystems/go/vnet/ip"
 	"github.com/platinasystems/go/vnet/ip4"

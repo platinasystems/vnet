@@ -5,9 +5,9 @@
 package ixge
 
 import (
-	"github.com/platinasystems/go/elib"
-	"github.com/platinasystems/go/elib/elog"
-	"github.com/platinasystems/go/elib/hw"
+	"github.com/platinasystems/elib"
+	"github.com/platinasystems/elib/elog"
+	"github.com/platinasystems/elib/hw"
 	"github.com/platinasystems/go/vnet"
 
 	"fmt"
@@ -25,7 +25,7 @@ type tx_dma_queue struct {
 	txRing vnet.TxDmaRing
 }
 
-//go:generate gentemplate -d Package=ixge -id tx_dma_queue -d VecType=tx_dma_queue_vec -d Type=tx_dma_queue github.com/platinasystems/go/elib/vec.tmpl
+//go:generate gentemplate -d Package=ixge -id tx_dma_queue -d VecType=tx_dma_queue_vec -d Type=tx_dma_queue github.com/platinasystems/elib/vec.tmpl
 
 type tx_descriptor struct {
 	buffer_address      uint64
@@ -34,7 +34,7 @@ type tx_descriptor struct {
 	status1             uint32
 }
 
-//go:generate gentemplate -d Package=ixge -id tx_descriptor -d Type=tx_descriptor -d VecType=tx_descriptor_vec github.com/platinasystems/go/elib/hw/dma_mem.tmpl
+//go:generate gentemplate -d Package=ixge -id tx_descriptor -d Type=tx_descriptor -d VecType=tx_descriptor_vec github.com/platinasystems/elib/hw/dma_mem.tmpl
 
 const (
 	tx_desc_status0_log2_is_end_of_packet   = 8 + 0

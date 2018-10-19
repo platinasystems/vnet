@@ -5,9 +5,9 @@
 package main
 
 import (
-	"github.com/platinasystems/go/elib/elog"
-	"github.com/platinasystems/go/elib/loop"
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib/elog"
+	"github.com/platinasystems/elib/loop"
+	"github.com/platinasystems/elib/parse"
 	"github.com/platinasystems/go/vnet"
 	"github.com/platinasystems/go/vnet/devices/ethernet/ixge"
 	"github.com/platinasystems/go/vnet/ethernet"

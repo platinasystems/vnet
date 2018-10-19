@@ -11,7 +11,7 @@ import (
 
 type iovec syscall.Iovec
 
-//go:generate gentemplate -d Package=unix -id iovec -d VecType=iovecVec -d Type=iovec github.com/platinasystems/go/elib/vec.tmpl
+//go:generate gentemplate -d Package=unix -id iovec -d VecType=iovecVec -d Type=iovec github.com/platinasystems/elib/vec.tmpl
 
 func rwv(fd int, iov []iovec, isWrite bool) (n int, e syscall.Errno) {
 	sc := syscall.SYS_READV

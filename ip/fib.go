@@ -5,7 +5,7 @@
 package ip
 
 import (
-	"github.com/platinasystems/go/elib"
+	"github.com/platinasystems/elib"
 	"github.com/platinasystems/go/vnet"
 
 	"fmt"
@@ -14,7 +14,7 @@ import (
 // Dense index into fib vector.
 type FibIndex uint32
 
-//go:generate gentemplate -d Package=ip -id FibIndex -d VecType=FibIndexVec -d Type=FibIndex github.com/platinasystems/go/elib/vec.tmpl
+//go:generate gentemplate -d Package=ip -id FibIndex -d VecType=FibIndexVec -d Type=FibIndex github.com/platinasystems/elib/vec.tmpl
 
 // Sparse 32 bit id for route table.
 type FibId uint32

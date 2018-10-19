@@ -5,7 +5,7 @@
 package ixge
 
 import (
-	"github.com/platinasystems/go/elib/cli"
+	"github.com/platinasystems/elib/cli"
 
 	"fmt"
 )

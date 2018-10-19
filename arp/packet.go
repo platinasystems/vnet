@@ -5,7 +5,7 @@
 package arp
 
 import (
-	"github.com/platinasystems/go/elib"
+	"github.com/platinasystems/elib"
 	"github.com/platinasystems/go/vnet"
 	"github.com/platinasystems/go/vnet/ethernet"
 	"github.com/platinasystems/go/vnet/ip4"

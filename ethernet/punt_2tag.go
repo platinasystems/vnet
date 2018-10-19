@@ -41,7 +41,7 @@ type punt_packet_disposition struct {
 	replace_tags [8]byte
 }
 
-//go:generate gentemplate -d Package=ethernet -id punt_packet_disposition -d PoolType=punt_packet_disposition_pool -d Type=punt_packet_disposition -d Data=dispositions github.com/platinasystems/go/elib/pool.tmpl
+//go:generate gentemplate -d Package=ethernet -id punt_packet_disposition -d PoolType=punt_packet_disposition_pool -d Type=punt_packet_disposition -d Data=dispositions github.com/platinasystems/elib/pool.tmpl
 
 type DoubleTaggedPuntNode vlan_tagged_punt_node
 
@@ -221,7 +221,7 @@ type inject_packet_disposition struct {
 	tags [2]VlanTag
 }
 
-//go:generate gentemplate -d Package=ethernet -id inject_packet_disposition -d VecType=inject_packet_disposition_vec -d Type=inject_packet_disposition github.com/platinasystems/go/elib/vec.tmpl
+//go:generate gentemplate -d Package=ethernet -id inject_packet_disposition -d VecType=inject_packet_disposition_vec -d Type=inject_packet_disposition github.com/platinasystems/elib/vec.tmpl
 
 type DoubleTaggedInjectNode struct {
 	vnet.InOutNode

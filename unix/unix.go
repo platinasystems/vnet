@@ -5,8 +5,8 @@
 package unix
 
 import (
-	"github.com/platinasystems/go/elib"
-	"github.com/platinasystems/go/elib/parse"
+	"github.com/platinasystems/elib"
+	"github.com/platinasystems/elib/parse"
 	"github.com/platinasystems/go/internal/netlink"
 	"github.com/platinasystems/go/vnet"
 

@@ -5,7 +5,7 @@
 package ixge
 
 import (
-	"github.com/platinasystems/go/elib/hw/pci"
+	"github.com/platinasystems/elib/hw/pci"
 
 	"fmt"
 )
