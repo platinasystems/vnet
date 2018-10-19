@@ -2,16 +2,12 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package sfp
 
-import (
-	"github.com/platinasystems/vnet/devices/optics/sfp"
+import "fmt"
 
-	"fmt"
-)
-
-func main() {
-	m := &sfp.QsfpModule{
+func Example() {
+	m := &QsfpModule{
 		BusIndex:   10,
 		BusAddress: 20,
 	}
