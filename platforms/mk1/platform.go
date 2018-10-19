@@ -36,13 +36,6 @@ func PlatformInit(v *vnet.Vnet, p *fe1_platform.Platform) (err error) {
 	m6 := ip6.Init(v)
 	gre.Init(v)
 	ethernet.Init(v, m4, m6)
-	if !p.KernelIxgbe {
-		ixge.Init(v, ixge.Config{DisableUnix: true, PuntNode: "fe1-single-tagged-punt"})
-	} else if !p.KernelIxgbevf {
-		// FIXME provision linux vlans?
-	} else if err = newSriovs(p.Version); err != nil {
-		return
-	}
 	pci.Init(v)
 	pg.Init(v)
 	ipcli.Init(v)
