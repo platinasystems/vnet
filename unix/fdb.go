@@ -21,11 +21,11 @@ import (
 	"unsafe"
 
 	"github.com/platinasystems/elib/loop"
-	"github.com/platinasystems/go/vnet"
-	"github.com/platinasystems/go/vnet/ethernet"
-	"github.com/platinasystems/go/vnet/ip"
-	"github.com/platinasystems/go/vnet/ip4"
-	"github.com/platinasystems/go/vnet/unix/internal/dbgfdb"
+	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/ethernet"
+	"github.com/platinasystems/vnet/ip"
+	"github.com/platinasystems/vnet/ip4"
+	"github.com/platinasystems/vnet/unix/internal/dbgfdb"
 	"github.com/platinasystems/xeth"
 )
 

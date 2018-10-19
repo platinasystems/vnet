@@ -12,8 +12,8 @@ import (
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/elib/cli"
 	"github.com/platinasystems/go/internal/netlink"
-	"github.com/platinasystems/go/vnet/ip"
-	"github.com/platinasystems/go/vnet/ip4"
+	"github.com/platinasystems/vnet/ip"
+	"github.com/platinasystems/vnet/ip4"
 )
 
 type netlink_add_del struct {

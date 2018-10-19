@@ -6,7 +6,7 @@ package ip
 
 import (
 	"github.com/platinasystems/elib"
-	"github.com/platinasystems/go/vnet"
+	"github.com/platinasystems/vnet"
 
 	"unsafe"
 )

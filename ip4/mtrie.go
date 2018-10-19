@@ -5,7 +5,7 @@
 package ip4
 
 import (
-	"github.com/platinasystems/go/vnet/ip"
+	"github.com/platinasystems/vnet/ip"
 )
 
 type leaf uint32

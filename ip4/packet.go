@@ -5,8 +5,8 @@
 package ip4
 
 import (
-	"github.com/platinasystems/go/vnet"
-	"github.com/platinasystems/go/vnet/ip"
+	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/ip"
 
 	"unsafe"
 )

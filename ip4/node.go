@@ -5,7 +5,7 @@
 package ip4
 
 import (
-	"github.com/platinasystems/go/vnet"
+	"github.com/platinasystems/vnet"
 )
 
 func GetHeader(r *vnet.Ref) *Header { return (*Header)(r.Data()) }

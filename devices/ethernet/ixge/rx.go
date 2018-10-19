@@ -8,8 +8,8 @@ import (
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/elib/elog"
 	"github.com/platinasystems/elib/hw"
-	"github.com/platinasystems/go/vnet"
-	"github.com/platinasystems/go/vnet/ethernet"
+	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/ethernet"
 
 	"fmt"
 	"unsafe"

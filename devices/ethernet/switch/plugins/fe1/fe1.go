@@ -7,8 +7,8 @@ package fe1
 import (
 	"plugin"
 
-	"github.com/platinasystems/go/vnet"
-	fe1_platform "github.com/platinasystems/go/vnet/platforms/fe1"
+	"github.com/platinasystems/vnet"
+	fe1_platform "github.com/platinasystems/vnet/platforms/fe1"
 )
 
 const FileName = "/usr/lib/goes/fe1.so"

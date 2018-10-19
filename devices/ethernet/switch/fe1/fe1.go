@@ -5,8 +5,8 @@
 package fe1
 
 import (
-	"github.com/platinasystems/go/vnet"
-	"github.com/platinasystems/go/vnet/platforms/fe1"
+	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/platforms/fe1"
 )
 
 var AddPlatform = func(v *vnet.Vnet, p *fe1.Platform) {}

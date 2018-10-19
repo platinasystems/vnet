@@ -5,8 +5,8 @@
 package ixge
 
 import (
-	"github.com/platinasystems/go/vnet"
-	"github.com/platinasystems/go/vnet/ethernet"
+	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/ethernet"
 
 	"fmt"
 )

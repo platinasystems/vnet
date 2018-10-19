@@ -6,10 +6,10 @@ package ip4
 
 import (
 	"github.com/platinasystems/elib/parse"
-	"github.com/platinasystems/go/vnet"
-	"github.com/platinasystems/go/vnet/icmp4"
-	"github.com/platinasystems/go/vnet/ip"
-	"github.com/platinasystems/go/vnet/pg"
+	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/icmp4"
+	"github.com/platinasystems/vnet/ip"
+	"github.com/platinasystems/vnet/pg"
 
 	"fmt"
 	"math/rand"

@@ -12,7 +12,7 @@ import (
 	"github.com/platinasystems/elib/elog"
 	"github.com/platinasystems/elib/hw"
 	"github.com/platinasystems/elib/parse"
-	"github.com/platinasystems/go/vnet"
+	"github.com/platinasystems/vnet"
 )
 
 const (

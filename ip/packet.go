@@ -7,7 +7,7 @@ package ip
 import (
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/elib/parse"
-	"github.com/platinasystems/go/vnet"
+	"github.com/platinasystems/vnet"
 
 	"fmt"
 )

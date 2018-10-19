@@ -7,8 +7,8 @@ package main
 import (
 	"github.com/platinasystems/elib/mctree"
 	"github.com/platinasystems/elib/parse"
-	"github.com/platinasystems/go/vnet"
-	"github.com/platinasystems/go/vnet/ip4"
+	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/ip4"
 
 	"bufio"
 	"encoding/gob"

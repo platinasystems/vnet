@@ -5,7 +5,7 @@
 package main
 
 import (
-	"github.com/platinasystems/go/vnet/devices/optics/sfp"
+	"github.com/platinasystems/vnet/devices/optics/sfp"
 
 	"fmt"
 )

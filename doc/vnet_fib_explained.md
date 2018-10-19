@@ -346,21 +346,21 @@ platina@invader34:~$ sudo ip addr add 10.0.0.1/24 brd + dev xeth1
 ```
 After going through func (m *Main) addDelInterfaceAddressRoutes(ia ip.IfAddr, isDel bool), calls are made to:
 ```
-Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDel() default prefix 10.0.0.1/24 adj 3 add: call fe1 hooks, addDelReachable
+Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDel() default prefix 10.0.0.1/24 adj 3 add: call fe1 hooks, addDelReachable
 Oct 17 17:47:04 invader34 goes.vnetd[11645]: 
-Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.1/24 adj 3 IsMpAdj false
+Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.1/24 adj 3 IsMpAdj false
 Oct 17 17:47:04 invader34 goes.vnetd[11645]: 
-Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.1/24 adj 3 IsMpAdj false finished: r {3 map[]
+Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.1/24 adj 3 IsMpAdj false finished: r {3 map[]
 }
 Oct 17 17:47:04 invader34 goes.vnetd[11645]: 
-Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDel() default prefix 10.0.0.1/32 adj 4 add: call fe1 hooks, addDelReachable
+Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDel() default prefix 10.0.0.1/32 adj 4 add: call fe1 hooks, addDelReachable
 Oct 17 17:47:04 invader34 goes.vnetd[11645]: 
-Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.1/32 adj 4 IsMpAdj false
+Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.1/32 adj 4 IsMpAdj false
 Oct 17 17:47:04 invader34 goes.vnetd[11645]: 
-Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.1/32 adj 4 replaceWithMoreSpecific lr {3 map[
+Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.1/32 adj 4 replaceWithMoreSpecific lr {3 map[
 ]} r {4 map[]}
 Oct 17 17:47:04 invader34 goes.vnetd[11645]: 
-Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.1/32 adj 4 IsMpAdj false finished: r {4 map[]
+Oct 17 17:47:04 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.1/32 adj 4 IsMpAdj false finished: r {4 map[]
 }
 ```
 addDel calls addDelReachable to add the fib entry to the reachable MapFib map, and also call the fibAddDelHooks that actually add/del the routes and adjacencies to the tcam
@@ -378,56 +378,56 @@ PING 10.0.0.1 (10.0.0.1) 56(84) bytes of data.
 64 bytes from 10.0.0.1: icmp_seq=1 ttl=64 time=0.407 ms
 ```
 ```
-Oct 17 19:49:06 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/unix.(*net_namespace_main).add_del_namespace() add_namespace R2
-Oct 17 19:49:06 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/unix.(*net_namespace_main).add_del_namespace() add_namespace R2
-Oct 17 19:49:06 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/unix.(*net_namespace_main).add_del_namespace() add_namespace R2
-Oct 17 19:49:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/unix.(*net_namespace).addDelMk1Interface() ns default isDel true ifname xeth2 ifindex 4930 address [80 24 76 0 10 69] devtype 0 iflinkindex 4 vlanid 4093
-Oct 17 19:49:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/unix.(*net_namespace).addDelMk1Interface() ns R2 isDel false ifname xeth2 ifindex 4930 address [80 24 76 0 10 69] devtype 0 iflinkindex 4 vlanid 4093
-Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDel() R2 prefix 10.0.0.2/24 adj 5 add: call fe1 hooks, addDelReachable
-Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.2/24 adj 5 IsMpAdj false
-Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.2/24 adj 5 IsMpAdj false finished: r {5 map[]}
-Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDel() R2 prefix 10.0.0.2/32 adj 6 add: call fe1 hooks, addDelReachable
-Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.2/32 adj 6 IsMpAdj false
-Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.2/32 adj 6 replaceWithMoreSpecific lr {5 map[]} r {6 map[]}
-Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.2/32 adj 6 IsMpAdj false finished: r {6 map[]}
-Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ethernet.(*ipNeighborMain).AddDelIpNeighbor() call AddDelRoute to add [10 0 0 2 0 0 0 0 0 0 0 0 0 0 0 0] adj 7 to xeth1
-Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Main).addDelRoute() addDelRoute add 10.0.0.2 adj 7
-Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDel() default prefix 10.0.0.2/32 adj 7 add: call fe1 hooks, addDelReachable
-Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false
-Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 replaceWithMoreSpecific lr {3 map[]} r {7 map[]}
-Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false finished: r {7 map[]}
-Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ethernet.(*ipNeighborMain).AddDelIpNeighbor() call AddDelRoute to add [10 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0] adj 8 to xeth2
-Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Main).addDelRoute() addDelRoute add 10.0.0.1 adj 8
-Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDel() R2 prefix 10.0.0.1/32 adj 8 add: call fe1 hooks, addDelReachable
-Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.1/32 adj 8 IsMpAdj false
-Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.1/32 adj 8 replaceWithMoreSpecific lr {5 map[]} r {8 map[]}
-Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.1/32 adj 8 IsMpAdj false finished: r {8 map[]}
-Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ethernet.(*ipNeighborMain).AddDelIpNeighbor() call AddDelRoute to add [10 0 0 2 0 0 0 0 0 0 0 0 0 0 0 0] adj 7 to xeth1
-Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Main).addDelRoute() addDelRoute add 10.0.0.2 adj 7
-Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDel() default prefix 10.0.0.2/32 adj 7 add: call fe1 hooks, addDelReachable
-Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false
-Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 replaceWithMoreSpecific lr {3 map[]} r {7 map[]}
-Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false finished: r {7 map[]}
-Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ethernet.(*ipNeighborMain).AddDelIpNeighbor() call AddDelRoute to add [10 0 0 2 0 0 0 0 0 0 0 0 0 0 0 0] adj 7 to xeth1
-Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Main).addDelRoute() addDelRoute add 10.0.0.2 adj 7
-Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDel() default prefix 10.0.0.2/32 adj 7 add: call fe1 hooks, addDelReachable
-Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false
-Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 replaceWithMoreSpecific lr {3 map[]} r {7 map[]}
-Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false finished: r {7 map[]}
+Oct 17 19:49:06 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/unix.(*net_namespace_main).add_del_namespace() add_namespace R2
+Oct 17 19:49:06 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/unix.(*net_namespace_main).add_del_namespace() add_namespace R2
+Oct 17 19:49:06 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/unix.(*net_namespace_main).add_del_namespace() add_namespace R2
+Oct 17 19:49:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/unix.(*net_namespace).addDelMk1Interface() ns default isDel true ifname xeth2 ifindex 4930 address [80 24 76 0 10 69] devtype 0 iflinkindex 4 vlanid 4093
+Oct 17 19:49:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/unix.(*net_namespace).addDelMk1Interface() ns R2 isDel false ifname xeth2 ifindex 4930 address [80 24 76 0 10 69] devtype 0 iflinkindex 4 vlanid 4093
+Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDel() R2 prefix 10.0.0.2/24 adj 5 add: call fe1 hooks, addDelReachable
+Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.2/24 adj 5 IsMpAdj false
+Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.2/24 adj 5 IsMpAdj false finished: r {5 map[]}
+Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDel() R2 prefix 10.0.0.2/32 adj 6 add: call fe1 hooks, addDelReachable
+Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.2/32 adj 6 IsMpAdj false
+Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.2/32 adj 6 replaceWithMoreSpecific lr {5 map[]} r {6 map[]}
+Oct 17 19:50:42 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.2/32 adj 6 IsMpAdj false finished: r {6 map[]}
+Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ethernet.(*ipNeighborMain).AddDelIpNeighbor() call AddDelRoute to add [10 0 0 2 0 0 0 0 0 0 0 0 0 0 0 0] adj 7 to xeth1
+Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Main).addDelRoute() addDelRoute add 10.0.0.2 adj 7
+Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDel() default prefix 10.0.0.2/32 adj 7 add: call fe1 hooks, addDelReachable
+Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false
+Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 replaceWithMoreSpecific lr {3 map[]} r {7 map[]}
+Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false finished: r {7 map[]}
+Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ethernet.(*ipNeighborMain).AddDelIpNeighbor() call AddDelRoute to add [10 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0] adj 8 to xeth2
+Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Main).addDelRoute() addDelRoute add 10.0.0.1 adj 8
+Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDel() R2 prefix 10.0.0.1/32 adj 8 add: call fe1 hooks, addDelReachable
+Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.1/32 adj 8 IsMpAdj false
+Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.1/32 adj 8 replaceWithMoreSpecific lr {5 map[]} r {8 map[]}
+Oct 17 19:51:14 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.1/32 adj 8 IsMpAdj false finished: r {8 map[]}
+Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ethernet.(*ipNeighborMain).AddDelIpNeighbor() call AddDelRoute to add [10 0 0 2 0 0 0 0 0 0 0 0 0 0 0 0] adj 7 to xeth1
+Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Main).addDelRoute() addDelRoute add 10.0.0.2 adj 7
+Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDel() default prefix 10.0.0.2/32 adj 7 add: call fe1 hooks, addDelReachable
+Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false
+Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 replaceWithMoreSpecific lr {3 map[]} r {7 map[]}
+Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false finished: r {7 map[]}
+Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ethernet.(*ipNeighborMain).AddDelIpNeighbor() call AddDelRoute to add [10 0 0 2 0 0 0 0 0 0 0 0 0 0 0 0] adj 7 to xeth1
+Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Main).addDelRoute() addDelRoute add 10.0.0.2 adj 7
+Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDel() default prefix 10.0.0.2/32 adj 7 add: call fe1 hooks, addDelReachable
+Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false
+Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 replaceWithMoreSpecific lr {3 map[]} r {7 map[]}
+Oct 17 19:51:19 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false finished: r {7 map[]}
 Oct 17 19:51:34 invader34 ntpd[2159]: Listen normally on 281 xeth1 fe80::5218:4cff:fe00:a44 UDP 123
 Oct 17 19:51:34 invader34 ntpd[2159]: peers refreshed
-Oct 17 19:51:38 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ethernet.(*ipNeighborMain).AddDelIpNeighbor() call AddDelRoute to add [10 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0] adj 8 to xeth2
-Oct 17 19:51:38 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Main).addDelRoute() addDelRoute add 10.0.0.1 adj 8
-Oct 17 19:51:38 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDel() R2 prefix 10.0.0.1/32 adj 8 add: call fe1 hooks, addDelReachable
-Oct 17 19:51:38 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.1/32 adj 8 IsMpAdj false
-Oct 17 19:51:38 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.1/32 adj 8 replaceWithMoreSpecific lr {5 map[]} r {8 map[]}
-Oct 17 19:51:38 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.1/32 adj 8 IsMpAdj false finished: r {8 map[]}
-Oct 17 19:51:47 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ethernet.(*ipNeighborMain).AddDelIpNeighbor() call AddDelRoute to add [10 0 0 2 0 0 0 0 0 0 0 0 0 0 0 0] adj 7 to xeth1
-Oct 17 19:51:47 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Main).addDelRoute() addDelRoute add 10.0.0.2 adj 7
-Oct 17 19:51:47 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDel() default prefix 10.0.0.2/32 adj 7 add: call fe1 hooks, addDelReachable
-Oct 17 19:51:47 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false
-Oct 17 19:51:47 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 replaceWithMoreSpecific lr {3 map[]} r {7 map[]}
-Oct 17 19:51:47 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false finished: r {7 map[]}
+Oct 17 19:51:38 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ethernet.(*ipNeighborMain).AddDelIpNeighbor() call AddDelRoute to add [10 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0] adj 8 to xeth2
+Oct 17 19:51:38 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Main).addDelRoute() addDelRoute add 10.0.0.1 adj 8
+Oct 17 19:51:38 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDel() R2 prefix 10.0.0.1/32 adj 8 add: call fe1 hooks, addDelReachable
+Oct 17 19:51:38 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.1/32 adj 8 IsMpAdj false
+Oct 17 19:51:38 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.1/32 adj 8 replaceWithMoreSpecific lr {5 map[]} r {8 map[]}
+Oct 17 19:51:38 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.0.0.1/32 adj 8 IsMpAdj false finished: r {8 map[]}
+Oct 17 19:51:47 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ethernet.(*ipNeighborMain).AddDelIpNeighbor() call AddDelRoute to add [10 0 0 2 0 0 0 0 0 0 0 0 0 0 0 0] adj 7 to xeth1
+Oct 17 19:51:47 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Main).addDelRoute() addDelRoute add 10.0.0.2 adj 7
+Oct 17 19:51:47 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDel() default prefix 10.0.0.2/32 adj 7 add: call fe1 hooks, addDelReachable
+Oct 17 19:51:47 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false
+Oct 17 19:51:47 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 replaceWithMoreSpecific lr {3 map[]} r {7 map[]}
+Oct 17 19:51:47 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: default 10.0.0.2/32 adj 7 IsMpAdj false finished: r {7 map[]}
 ```
 
 ### Example 3
@@ -448,24 +448,24 @@ platina@invader34:~$ goes vnet show ip fib
           R2                   10.5.5.5/32       9: rewrite xeth2 IP4: 50:18:4c:00:0a:45 -> 50:18:4c:00:0a:44 adj-range 9-9, weight 1 nh-adj 8
 ```
 ```
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Main).AddDelRouteNextHop() call addDelRouteNextHop R2 prefix 10.5.5.5/32 oldAdj 0(AdjMiss) add nh [10 0 0 1] from AddDelRouteNextHop
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip.(*Main).AddDelNextHop() add adj 8 to 0(AdjMiss) oldNhs:, nnh 0, newNhs before resolve  8 weight 1; ...
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip.(*Main).createMpAdj() given nhs: 8 weight 1;
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip.(*Main).createMpAdj() resolved nhs: 8 weight 1;
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip.(*Main).createMpAdj() normalized nhs: 8 weight 1;
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip.(*Main).createMpAdj() create new block, adj 9
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip.(*Main).addDelHelper() multipathAdj 9 referenceCount++ 1
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelRouteNextHop() add: prefix 10.5.5.5/32, oldAdj 0(AdjMiss), newAdj 9
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDel() R2 prefix 10.5.5.5/32 adj 9 add: call fe1 hooks, addDelReachable
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.5.5.5/32 adj 9 IsMpAdj true
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).addDelReachable() add: R2 10.5.5.5/32 adj 9 IsMpAdj true finished: r {9 map[]}
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*mapFibResult).addDelNextHop() isDel false id {[10 0 0 1] 1} ip {{[10 5 5 5] 32} 1}: before &{8 map[]}
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*mapFibResult).addDelNextHop() after &{8 map[{[10 0 0 1] 1}:map[{{[10 5 5 5] 32} 1}:0xc00216c150]]}
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*Fib).setReachable() isDel false prefix 10.5.5.5/32 via 10.0.0.1/32 nha [10 0 0 1] adj 8, new mapFibResult {8 map[{[10 0 0 1] 1}:map[{{[10 5 5 5] 32} 1}:0xc00216c150]]}
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Main).AddDelRouteNextHop() call addDelRouteNextHop R2 prefix 10.5.5.5/32 oldAdj 0(AdjMiss) add nh [10 0 0 1] from AddDelRouteNextHop
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip.(*Main).AddDelNextHop() add adj 8 to 0(AdjMiss) oldNhs:, nnh 0, newNhs before resolve  8 weight 1; ...
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip.(*Main).createMpAdj() given nhs: 8 weight 1;
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip.(*Main).createMpAdj() resolved nhs: 8 weight 1;
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip.(*Main).createMpAdj() normalized nhs: 8 weight 1;
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip.(*Main).createMpAdj() create new block, adj 9
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip.(*Main).addDelHelper() multipathAdj 9 referenceCount++ 1
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelRouteNextHop() add: prefix 10.5.5.5/32, oldAdj 0(AdjMiss), newAdj 9
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDel() R2 prefix 10.5.5.5/32 adj 9 add: call fe1 hooks, addDelReachable
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.5.5.5/32 adj 9 IsMpAdj true
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).addDelReachable() add: R2 10.5.5.5/32 adj 9 IsMpAdj true finished: r {9 map[]}
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*mapFibResult).addDelNextHop() isDel false id {[10 0 0 1] 1} ip {{[10 5 5 5] 32} 1}: before &{8 map[]}
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*mapFibResult).addDelNextHop() after &{8 map[{[10 0 0 1] 1}:map[{{[10 5 5 5] 32} 1}:0xc00216c150]]}
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*Fib).setReachable() isDel false prefix 10.5.5.5/32 via 10.0.0.1/32 nha [10 0 0 1] adj 8, new mapFibResult {8 map[{[10 0 0 1] 1}:map[{{[10 5 5 5] 32} 1}:0xc00216c150]]}
 ```
 This example illustrates the use of mapFibResult.nh, as illustrated in function call to addDelNexHop():
 ```
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip4.(*mapFibResult).addDelNextHop() after &{8 map[{[10 0 0 1] 1}:map[{{[10 5 5 5] 32} 1}:0xc00216c150]]}
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip4.(*mapFibResult).addDelNextHop() after &{8 map[{[10 0 0 1] 1}:map[{{[10 5 5 5] 32} 1}:0xc00216c150]]}
 ```
 Basically there is a fib entry for prefix 10.0.0.1/32 when the arp completed.
 A mapFibKey is created for this prefix 10.0.0.1/32.  Because it is a /32, the entry it created is a mapFibResult in
@@ -482,6 +482,6 @@ but it's ```reachable[32][mapFibKey].nh``` is an empty map, because there is no 
 
 Note the debug log entry
 ```
-Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/go/vnet/ip.(*Main).addDelHelper() multipathAdj 9 referenceCount++ 1
+Oct 17 19:57:37 invader34 goes.vnetd[11645]: github.com/platinasystems/vnet/ip.(*Main).addDelHelper() multipathAdj 9 referenceCount++ 1
 ```
 Because adj 9, which is a mpAdj index, is referenced once (by prefix 10.5.5.5/32), it has a referenceCount incremented from 0 to 1.  If more entries references adj 9, the referenceCount will keep incrementing.  If one of these entry that references 9 is deleted, or no longer reference adj 9 (e.g. new next hop added), the referenceCount will decrement.  Only when the referenceCount == 0 will the adjacency for adj 9 actually get deleted and the heap entry freed from vnet and fe1.  At that point the adjacency index 9 is free and can be use for the next new adjacency.

@@ -5,7 +5,7 @@
 package mpls
 
 import (
-	"github.com/platinasystems/go/vnet"
+	"github.com/platinasystems/vnet"
 
 	"unsafe"
 )

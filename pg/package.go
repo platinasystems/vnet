@@ -7,7 +7,7 @@ package pg
 import (
 	"github.com/platinasystems/elib/cli"
 	"github.com/platinasystems/elib/parse"
-	"github.com/platinasystems/go/vnet"
+	"github.com/platinasystems/vnet"
 )
 
 var packageIndex uint

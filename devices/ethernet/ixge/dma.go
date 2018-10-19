@@ -8,7 +8,7 @@ import (
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/elib/hw/pci"
 	"github.com/platinasystems/elib/hw/pcie"
-	"github.com/platinasystems/go/vnet"
+	"github.com/platinasystems/vnet"
 
 	"sync"
 )

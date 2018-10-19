@@ -22,9 +22,9 @@ import (
 	"github.com/platinasystems/go/internal/machine"
 	"github.com/platinasystems/go/internal/redis"
 	"github.com/platinasystems/go/internal/redis/publisher"
-	"github.com/platinasystems/go/vnet"
-	"github.com/platinasystems/go/vnet/devices/optics/sfp"
-	fe1_platform "github.com/platinasystems/go/vnet/platforms/fe1"
+	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/devices/optics/sfp"
+	fe1_platform "github.com/platinasystems/vnet/platforms/fe1"
 )
 
 const (

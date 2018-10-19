@@ -9,8 +9,8 @@ import (
 	"github.com/platinasystems/elib/hw"
 	"github.com/platinasystems/elib/hw/pci"
 	"github.com/platinasystems/elib/parse"
-	"github.com/platinasystems/go/vnet"
-	vnetpci "github.com/platinasystems/go/vnet/devices/bus/pci"
+	"github.com/platinasystems/vnet"
+	vnetpci "github.com/platinasystems/vnet/devices/bus/pci"
 
 	"time"
 )

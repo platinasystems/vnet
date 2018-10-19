@@ -6,9 +6,9 @@ package gre
 
 import (
 	"github.com/platinasystems/elib/parse"
-	"github.com/platinasystems/go/vnet"
-	"github.com/platinasystems/go/vnet/ip"
-	"github.com/platinasystems/go/vnet/ip4"
+	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/ip"
+	"github.com/platinasystems/vnet/ip4"
 )
 
 var packageIndex uint

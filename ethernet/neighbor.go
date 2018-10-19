@@ -6,9 +6,9 @@ package ethernet
 
 import (
 	"github.com/platinasystems/elib/cpu"
-	"github.com/platinasystems/go/vnet"
-	"github.com/platinasystems/go/vnet/internal/dbgvnet"
-	"github.com/platinasystems/go/vnet/ip"
+	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/internal/dbgvnet"
+	"github.com/platinasystems/vnet/ip"
 
 	"errors"
 )

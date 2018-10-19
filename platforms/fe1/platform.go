@@ -5,8 +5,8 @@
 package fe1
 
 import (
-	"github.com/platinasystems/go/vnet/devices/optics/sfp"
-	"github.com/platinasystems/go/vnet/ethernet"
+	"github.com/platinasystems/vnet/devices/optics/sfp"
+	"github.com/platinasystems/vnet/ethernet"
 	"github.com/platinasystems/xeth"
 )
 
