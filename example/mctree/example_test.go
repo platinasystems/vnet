@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package mctree
 
 import (
 	"github.com/platinasystems/elib/mctree"
@@ -152,7 +152,7 @@ func (t *test) gen_sequential_slash_24_routes() {
 	}
 }
 
-func main() {
+func Example() {
 	t := &test{}
 
 	cf := &t.mctree.Config

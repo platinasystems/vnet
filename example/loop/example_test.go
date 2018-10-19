@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package loop
 
 import (
 	"github.com/platinasystems/elib/cli"
@@ -60,11 +60,11 @@ func (n *myNode) LoopInit(l *loop.Loop) {
 				Dst:  ethernet.Address{0xea, 0xeb, 0xec, 0xed, 0xee, 0xef},
 			},
 			&ip4.Header{
-				Protocol: ip.UDP,
-				Src:      ip4.Address{0x1, 0x2, 0x3, 0x4},
-				Dst:      ip4.Address{0x5, 0x6, 0x7, 0x8},
-				Tos:      0,
-				Ttl:      255,
+				Protocol:                     ip.UDP,
+				Src:                          ip4.Address{0x1, 0x2, 0x3, 0x4},
+				Dst:                          ip4.Address{0x5, 0x6, 0x7, 0x8},
+				Tos:                          0,
+				Ttl:                          255,
 				Ip_version_and_header_length: 0x45,
 				Fragment_id:                  vnet.Uint16(0x1234).FromHost(),
 				Flags_and_fragment_offset:    ip4.DontFragment.FromHost(),
@@ -147,6 +147,6 @@ func init() {
 	})
 }
 
-func main() {
+func Example() {
 	loop.Run()
 }
