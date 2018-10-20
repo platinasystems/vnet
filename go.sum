@@ -12,6 +12,8 @@ github.com/platinasystems/elib v0.0.0-20181019183743-6a633109d3b4 h1:GO+Wlo9ZeZU
 github.com/platinasystems/elib v0.0.0-20181019183743-6a633109d3b4/go.mod h1:o+1OaDab+e40yVY8u+LcnmzCR2PZUv1VeEwgzEYkN54=
 github.com/platinasystems/elib v0.0.0-20181020231933-abcd3eed9f75 h1:X+d/IwW1IzPjrrRP4IiMu8xWNPube4Zsa/BDqVivtBI=
 github.com/platinasystems/elib v0.0.0-20181020231933-abcd3eed9f75/go.mod h1:o+1OaDab+e40yVY8u+LcnmzCR2PZUv1VeEwgzEYkN54=
+github.com/platinasystems/elib v0.0.0-20181020233022-05b3cafd162e h1:u9wX32W3g2lbRsFYg0xDazkQlN5djlpp8MRlhvlO7is=
+github.com/platinasystems/elib v0.0.0-20181020233022-05b3cafd162e/go.mod h1:XZy8etdf41RtMxmxEYArLL7T6QEJ5MPAIeHDqXtPCUU=
 github.com/platinasystems/i2c v0.0.0-20181019213407-8214913e67af h1:bHZ3RKuiaglPYzAqoGD2zheO9JIs4OA22CqdxZ6I/mQ=
 github.com/platinasystems/i2c v0.0.0-20181019213407-8214913e67af/go.mod h1:Yj5hRxt+HXbW1rXv9aTtxUNZsegDjeWerUPY5BIjDVM=
 github.com/platinasystems/indent v0.0.0-20181019183348-8fe1000261d8 h1:EA/MDmNgqkt1/N4MTnUtGroseplxfNIMilTc39dghCA=
