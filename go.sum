@@ -24,6 +24,8 @@ github.com/platinasystems/redis v0.0.0-20181019221245-e5d0abe14605 h1:iTZG/CdHZ2
 github.com/platinasystems/redis v0.0.0-20181019221245-e5d0abe14605/go.mod h1:lyuhkHpfn6y21/nMn7H6pbBuPk1D8pflwsatn4OIl8M=
 github.com/platinasystems/redis v0.0.0-20181022172723-f27f88455530 h1:/nL4q0DfP9RCMWDp6KXaxe4F5T40pz67eMmXOpsbCwM=
 github.com/platinasystems/redis v0.0.0-20181022172723-f27f88455530/go.mod h1:lyuhkHpfn6y21/nMn7H6pbBuPk1D8pflwsatn4OIl8M=
+github.com/platinasystems/redis v0.0.0-20181022194819-47dc1dbf4623 h1:i5BOdwsFo16Srld2T06G4G+zXngakusLxmpLHzomy1k=
+github.com/platinasystems/redis v0.0.0-20181022194819-47dc1dbf4623/go.mod h1:lyuhkHpfn6y21/nMn7H6pbBuPk1D8pflwsatn4OIl8M=
 github.com/platinasystems/xeth v0.0.0-20181010000040-d9ed5089fdd0 h1:Jo+BYZRIUfTP9tgElahzcTY8bNXVkxljDs1HXfpORYs=
 github.com/platinasystems/xeth v0.0.0-20181010000040-d9ed5089fdd0/go.mod h1:MokUskjwMrKdnZ08SVlEh9dkQreCHtPPEMFA81kdahI=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
