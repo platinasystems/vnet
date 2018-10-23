@@ -30,6 +30,8 @@ github.com/platinasystems/i2c v1.1.0 h1:34ewZSwxMvtD5kYjJAhNtwmEsCFjiQt+o6OJ62Ni
 github.com/platinasystems/i2c v1.1.0/go.mod h1:Yj5hRxt+HXbW1rXv9aTtxUNZsegDjeWerUPY5BIjDVM=
 github.com/platinasystems/indent v0.0.0-20181019183348-8fe1000261d8 h1:EA/MDmNgqkt1/N4MTnUtGroseplxfNIMilTc39dghCA=
 github.com/platinasystems/indent v0.0.0-20181019183348-8fe1000261d8/go.mod h1:D3GIC7ZG6jwJtpdkiCq8/xcrP/NXInOFFr5rJPos4hA=
+github.com/platinasystems/indent v1.1.0 h1:VmMAqlCw1MlWgQcygXqkLsyE0Q8atBCBX+zwWVPM8Fw=
+github.com/platinasystems/indent v1.1.0/go.mod h1:D3GIC7ZG6jwJtpdkiCq8/xcrP/NXInOFFr5rJPos4hA=
 github.com/platinasystems/log v0.0.0-20181019191631-6c3b2ed28252 h1:nE1v/LGhdYJ3JbnQgfTcQm2PSqrcQB2J6W0Pm+GS4ag=
 github.com/platinasystems/log v0.0.0-20181019191631-6c3b2ed28252/go.mod h1:5Wjp9vxMfkZGWz2Ep3ghzsfarcs9MMfiE2RzKwseyKQ=
 github.com/platinasystems/redis v0.0.0-20181019221245-e5d0abe14605 h1:iTZG/CdHZ2h5/Hahg9RjK5a7uKNsPKQK05wdvfsKqYo=
