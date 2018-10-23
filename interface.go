@@ -137,7 +137,7 @@ func (k SwIfKind) String() string {
 }
 
 func (t *SwInterfaceType) GetSwInterfaceType() *SwInterfaceType                                  { return t }
-func (t *SwInterfaceType) SwInterfaceName(v *Vnet, s *SwIf) string                               { return s.builtinSwIfName(v) }
+func (t *SwInterfaceType) SwInterfaceName(v *Vnet, s *SwIf) string                               { return s.name }
 func (t *SwInterfaceType) SwInterfaceSetRewrite(rw *Rewrite, si Si, noder Noder, typ PacketType) {}
 func (t *SwInterfaceType) SwInterfaceRewriteString(v *Vnet, r *Rewrite) []string {
 	hi := v.SupHi(r.Si)
@@ -212,6 +212,8 @@ type IfId IfIndex
 type SwIf struct {
 	kind SwIfKind
 
+	name string //if SwIfKindHardware, then name should same as HwIf.name
+
 	flags swIfFlag
 
 	// Pool index for this interface.
@@ -228,7 +230,7 @@ type SwIf struct {
 
 //go:generate gentemplate -d Package=vnet -id SwIf -d PoolType=swIfPool -d Type=SwIf -d Data=elts github.com/platinasystems/elib/pool.tmpl
 
-func (m *Vnet) addDelSwInterface(siʹ, supSi Si, kind SwIfKind, id IfId, isDel bool) (si Si) {
+func (m *Vnet) addDelSwInterface(siʹ, supSi Si, kind SwIfKind, id IfId, ifname string, isDel bool) (si Si) {
 	si = siʹ
 
 	if isDel {
@@ -247,6 +249,7 @@ func (m *Vnet) addDelSwInterface(siʹ, supSi Si, kind SwIfKind, id IfId, isDel b
 		s.si = si
 		s.supSi = supSi
 		s.id = id
+		s.name = ifname
 		m.counterValidateSw(si)
 	}
 
@@ -273,15 +276,15 @@ func (m *Vnet) addDelSwInterface(siʹ, supSi Si, kind SwIfKind, id IfId, isDel b
 	return
 }
 
-func (m *Vnet) NewSwIf(kind SwIfKind, id IfId) Si {
-	return m.addDelSwInterface(SiNil, SiNil, kind, id, false)
+func (m *Vnet) NewSwIf(kind SwIfKind, id IfId, ifname string) Si {
+	return m.addDelSwInterface(SiNil, SiNil, kind, id, ifname, false)
 }
 func (m *Vnet) DelSwIf(si Si) {
-	m.addDelSwInterface(si, si, 0, 0, true)
+	m.addDelSwInterface(si, si, 0, 0, "", true)
 }
 
-func (m *Vnet) NewSwSubInterface(supSi Si, id IfId) (si Si) {
-	si = m.addDelSwInterface(SiNil, supSi, SwIfKindSubInterface, id, false)
+func (m *Vnet) NewSwSubInterface(supSi Si, id IfId, ifname string) (si Si) {
+	si = m.addDelSwInterface(SiNil, supSi, SwIfKindSubInterface, id, ifname, false)
 	s := m.SwIf(si)
 	h := m.SupHwIf(s)
 	if h.subSiById == nil {
@@ -345,8 +348,11 @@ func (s *SwIf) builtinSwIfName(vn *Vnet) (v string) {
 }
 func (i Si) Name(v *Vnet) string {
 	s := v.SwIf(i)
-	t := v.swInterfaceTypes[s.kind]
-	return t.SwInterfaceName(v, s)
+	/*
+		t := v.swInterfaceTypes[s.kind]
+		return t.SwInterfaceName(v, s)
+	*/
+	return s.name
 }
 func (i Hi) Name(v *Vnet) string { return v.HwIf(i).name }
 
@@ -570,7 +576,7 @@ func (v *Vnet) RegisterAndProvisionHwInterface(h HwInterfacer, provision bool, f
 	hw.vnet = v
 	hw.defaultId = h.DefaultId()
 	hw.unprovisioned = !provision
-	hw.si = v.NewSwIf(SwIfKindHardware, IfId(hw.hi))
+	hw.si = v.NewSwIf(SwIfKindHardware, IfId(hw.hi), hw.name)
 
 	isDel := false
 	m := &v.interfaceMain

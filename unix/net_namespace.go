@@ -9,10 +9,10 @@ import (
 	"github.com/platinasystems/elib/cli"
 	"github.com/platinasystems/elib/elog"
 	"github.com/platinasystems/elib/parse"
-	"github.com/platinasystems/vnet/netlink"
 	"github.com/platinasystems/vnet"
 	"github.com/platinasystems/vnet/ethernet"
 	"github.com/platinasystems/vnet/internal/dbgvnet"
+	"github.com/platinasystems/vnet/netlink"
 	"github.com/platinasystems/vnet/unix/internal/dbgfdb"
 	"github.com/platinasystems/xeth"
 
@@ -673,7 +673,6 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 		} else {
 			name_changed = intf.name != ifname
 		}
-		//fmt.Printf("net_namespace.go add interface %s: intf=%s, ifindex=%d, name_changed=%t\n", ns.name, intf.name, index, name_changed) //debug print
 		addr := address[:]
 		if exists && !bytes.Equal(intf.address, addr) {
 			// fixme address change
@@ -710,7 +709,7 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 			m.addDelVlan(intf, iflinkindex, vlanid, isDel)
 		}
 		if !exists && devtype == xeth.XETH_DEVTYPE_XETH_BRIDGE {
-			si := ns.m.m.v.NewSwIf(vnet.SwBridgeInterface, vnet.IfId(ifindex))
+			si := ns.m.m.v.NewSwIf(vnet.SwBridgeInterface, vnet.IfId(ifindex), intf.name)
 			m.set_si(intf, si)
 			si.SetId(m.v, vnet.IfId(vlanid))
 			dbgfdb.Ifinfo.Log("addDelMk1Interface: Add xeth.XETH_DEVTYPE_XETH_BRIDGE", ifname, vlanid, ifindex, si, intf)
@@ -800,7 +799,7 @@ func (m *net_namespace_main) add_del_vlan(intf *net_namespace_interface, msg *ne
 		}
 		hi := v.SupHi(sup_si)
 		hw := v.HwIf(hi)
-		si := ns.m.m.v.NewSwSubInterface(hw.Si(), vnet.IfId(eid))
+		si := ns.m.m.v.NewSwSubInterface(hw.Si(), vnet.IfId(eid), intf.name)
 		m.set_si(intf, si)
 	}
 	return
@@ -847,7 +846,7 @@ func (m *net_namespace_main) addDelVlan(intf *net_namespace_interface, supifinde
 		}
 		hi := v.SupHi(sup_si)
 		hw := v.HwIf(hi)
-		si := ns.m.m.v.NewSwSubInterface(hw.Si(), vnet.IfId(eid))
+		si := ns.m.m.v.NewSwSubInterface(hw.Si(), vnet.IfId(eid), intf.name)
 
 		dbgvnet.Adj.Logf("ns %v add sup_si %v sup_si.IsSwSub %v, IfId %v, vlanId %v, si %v\n", ns.name, sup_si, sup_si.IsSwSubInterface(v), vnet.IfId(eid), vlanid, si.Name(v))
 		m.set_si(intf, si)
