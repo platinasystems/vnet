@@ -4,6 +4,9 @@ github.com/gotk3/gotk3 v0.0.0-20181009192800-ac5a14d9e3ee h1:HYcoHcy+2YPznQwdGjl
 github.com/gotk3/gotk3 v0.0.0-20181009192800-ac5a14d9e3ee/go.mod h1:Eew3QBwAOBTrfFFDmsDE5wZWbcagBL1NUslj1GhRveo=
 github.com/platinasystems/accumulate v0.0.0-20181019183040-63617d15f799 h1:HpgzjOFv5du0h9udWjDgx4t/4KszyyJByKAkIvjl4qw=
 github.com/platinasystems/accumulate v0.0.0-20181019183040-63617d15f799/go.mod h1:lc7wpU1G++0lunURQyH853Y77bwWr0hXPiLLeaxjGIY=
+github.com/platinasystems/accumulate v0.0.0-20181023225949-a31d1bb4da23 h1:foSG+wWkpvy1sSM8tl7ik9WkA/hIUdyDtCJ9K1+Fob0=
+github.com/platinasystems/accumulate v0.0.0-20181023225949-a31d1bb4da23/go.mod h1:lc7wpU1G++0lunURQyH853Y77bwWr0hXPiLLeaxjGIY=
+github.com/platinasystems/accumulate v1.1.0/go.mod h1:lc7wpU1G++0lunURQyH853Y77bwWr0hXPiLLeaxjGIY=
 github.com/platinasystems/atsock v0.0.0-20181019220955-c4cc7ae24dbf h1:ChH/cr79NDkkmHtco+2TC3YT2aBUXV+Kf6SFjSRMycQ=
 github.com/platinasystems/atsock v0.0.0-20181019220955-c4cc7ae24dbf/go.mod h1:1XAb4yaMVNH9PDa7Q4sZmDqHoHSrzUfnGImUuSMpx5U=
 github.com/platinasystems/dbg v0.0.0-20181012183359-440db521da7f h1:OiGCDI3wT7DWE2JdDEZujcwbwS/ol6CuWL0tOdP9YPc=
