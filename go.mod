@@ -5,7 +5,7 @@ require (
 	github.com/platinasystems/accumulate v1.1.0
 	github.com/platinasystems/dbg v1.1.0
 	github.com/platinasystems/elib v1.1.0
-	github.com/platinasystems/i2c v0.0.0-20181019213407-8214913e67af
+	github.com/platinasystems/i2c v1.1.0
 	github.com/platinasystems/indent v0.0.0-20181019183348-8fe1000261d8
 	github.com/platinasystems/log v0.0.0-20181019191631-6c3b2ed28252
 	github.com/platinasystems/redis v0.0.0-20181022194819-47dc1dbf4623
