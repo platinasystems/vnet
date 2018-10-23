@@ -34,6 +34,8 @@ github.com/platinasystems/indent v1.1.0 h1:VmMAqlCw1MlWgQcygXqkLsyE0Q8atBCBX+zwW
 github.com/platinasystems/indent v1.1.0/go.mod h1:D3GIC7ZG6jwJtpdkiCq8/xcrP/NXInOFFr5rJPos4hA=
 github.com/platinasystems/log v0.0.0-20181019191631-6c3b2ed28252 h1:nE1v/LGhdYJ3JbnQgfTcQm2PSqrcQB2J6W0Pm+GS4ag=
 github.com/platinasystems/log v0.0.0-20181019191631-6c3b2ed28252/go.mod h1:5Wjp9vxMfkZGWz2Ep3ghzsfarcs9MMfiE2RzKwseyKQ=
+github.com/platinasystems/log v1.1.0 h1:hjWJskNV5QC36B+fz9rIyZjMztXZeRnOCypoSALlsm4=
+github.com/platinasystems/log v1.1.0/go.mod h1:5Wjp9vxMfkZGWz2Ep3ghzsfarcs9MMfiE2RzKwseyKQ=
 github.com/platinasystems/redis v0.0.0-20181019221245-e5d0abe14605 h1:iTZG/CdHZ2h5/Hahg9RjK5a7uKNsPKQK05wdvfsKqYo=
 github.com/platinasystems/redis v0.0.0-20181019221245-e5d0abe14605/go.mod h1:lyuhkHpfn6y21/nMn7H6pbBuPk1D8pflwsatn4OIl8M=
 github.com/platinasystems/redis v0.0.0-20181022172723-f27f88455530 h1:/nL4q0DfP9RCMWDp6KXaxe4F5T40pz67eMmXOpsbCwM=
