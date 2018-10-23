@@ -3,7 +3,7 @@ module github.com/platinasystems/vnet
 require (
 	github.com/garyburd/redigo v1.6.0
 	github.com/platinasystems/accumulate v1.1.0
-	github.com/platinasystems/dbg v0.0.0-20181012183359-440db521da7f
+	github.com/platinasystems/dbg v1.1.0
 	github.com/platinasystems/elib v1.1.0
 	github.com/platinasystems/i2c v0.0.0-20181019213407-8214913e67af
 	github.com/platinasystems/indent v0.0.0-20181019183348-8fe1000261d8

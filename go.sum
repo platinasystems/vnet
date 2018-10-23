@@ -6,11 +6,14 @@ github.com/platinasystems/accumulate v0.0.0-20181019183040-63617d15f799 h1:Hpgzj
 github.com/platinasystems/accumulate v0.0.0-20181019183040-63617d15f799/go.mod h1:lc7wpU1G++0lunURQyH853Y77bwWr0hXPiLLeaxjGIY=
 github.com/platinasystems/accumulate v0.0.0-20181023225949-a31d1bb4da23 h1:foSG+wWkpvy1sSM8tl7ik9WkA/hIUdyDtCJ9K1+Fob0=
 github.com/platinasystems/accumulate v0.0.0-20181023225949-a31d1bb4da23/go.mod h1:lc7wpU1G++0lunURQyH853Y77bwWr0hXPiLLeaxjGIY=
+github.com/platinasystems/accumulate v1.1.0 h1:IA4REpkYW7Q9KhhM/PCBcryBYb0veGIbes1EENpye/M=
 github.com/platinasystems/accumulate v1.1.0/go.mod h1:lc7wpU1G++0lunURQyH853Y77bwWr0hXPiLLeaxjGIY=
 github.com/platinasystems/atsock v0.0.0-20181019220955-c4cc7ae24dbf h1:ChH/cr79NDkkmHtco+2TC3YT2aBUXV+Kf6SFjSRMycQ=
 github.com/platinasystems/atsock v0.0.0-20181019220955-c4cc7ae24dbf/go.mod h1:1XAb4yaMVNH9PDa7Q4sZmDqHoHSrzUfnGImUuSMpx5U=
 github.com/platinasystems/dbg v0.0.0-20181012183359-440db521da7f h1:OiGCDI3wT7DWE2JdDEZujcwbwS/ol6CuWL0tOdP9YPc=
 github.com/platinasystems/dbg v0.0.0-20181012183359-440db521da7f/go.mod h1:sWVDySjmyMRdh9RgbbJORw6A+xIBdAmoqOXBarhswZY=
+github.com/platinasystems/dbg v1.1.0 h1:lR9gyHw4CQbPGp8p1MUlzwRec+nppwjSr4TwGUTNo48=
+github.com/platinasystems/dbg v1.1.0/go.mod h1:sWVDySjmyMRdh9RgbbJORw6A+xIBdAmoqOXBarhswZY=
 github.com/platinasystems/elib v0.0.0-20181019183743-6a633109d3b4 h1:GO+Wlo9ZeZUIeqooLYKpkeCN6bwXBq9Zp18JyUjXe0M=
 github.com/platinasystems/elib v0.0.0-20181019183743-6a633109d3b4/go.mod h1:o+1OaDab+e40yVY8u+LcnmzCR2PZUv1VeEwgzEYkN54=
 github.com/platinasystems/elib v0.0.0-20181020231933-abcd3eed9f75 h1:X+d/IwW1IzPjrrRP4IiMu8xWNPube4Zsa/BDqVivtBI=
