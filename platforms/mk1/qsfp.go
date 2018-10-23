@@ -374,7 +374,7 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 
 		q.SetSignal(signal, v)
 		if signal == sfp.QsfpModuleIsPresent {
-			f := "port-" + strconv.Itoa(int(port)+PortBase()) + ".qsfp.installed"
+			f := "xeth" + strconv.Itoa(int(port)+PortBase()) + ".qsfp.installed"
 			s := strconv.FormatBool(v)
 			if s != lasts[f] {
 				pub.Print(f, ": ", s)
@@ -489,7 +489,7 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 				log.Print("port ", port+uint(PortBase()), " installed: ", s)
 
 				for _, k := range sfp.StaticRedisFields {
-					f := "port-" + strconv.Itoa(int(port)+PortBase()) + "." + k
+					f := "xeth" + strconv.Itoa(int(port)+PortBase()) + "." + k
 					if strings.Contains(k, "vendor") {
 						s := q.Ident.Vendor
 						if s != lasts[f] {
@@ -546,7 +546,7 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 
 					q.Monitoring()
 					for _, k := range sfp.StaticMonitoringRedisFields {
-						f := "port-" + strconv.Itoa(int(port)+PortBase()) + "." + k
+						f := "xeth" + strconv.Itoa(int(port)+PortBase()) + "." + k
 						if strings.Contains(k, "temperature") {
 							if strings.Contains(k, "highAlarm") {
 								s := strconv.FormatFloat(q.Config.TemperatureInCelsius.Alarm.Hi, 'f', 3, 64)
@@ -707,18 +707,18 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 				}
 				// delete redis fields
 				for _, k := range sfp.StaticRedisFields {
-					f := "port-" + strconv.Itoa(int(port)+PortBase()) + "." + k
+					f := "xeth" + strconv.Itoa(int(port)+PortBase()) + "." + k
 					pub.Print("delete: ", f)
 					lasts[f] = ""
 				}
 				if !strings.Contains(q.Ident.Compliance, "CR") && q.Ident.Compliance != "" {
 					for _, k := range sfp.StaticMonitoringRedisFields {
-						f := "port-" + strconv.Itoa(int(port)+PortBase()) + "." + k
+						f := "xeth" + strconv.Itoa(int(port)+PortBase()) + "." + k
 						pub.Print("delete: ", f)
 						lasts[f] = ""
 					}
 					for _, k := range sfp.DynamicMonitoringRedisFields {
-						f := "port-" + strconv.Itoa(int(port)+PortBase()) + "." + k
+						f := "xeth" + strconv.Itoa(int(port)+PortBase()) + "." + k
 						pub.Print("delete: ", f)
 						lasts[f] = ""
 					}
@@ -741,7 +741,7 @@ func (m *qsfpMain) poll() {
 
 	// publish all ports empty
 	for i := 0; i < numPorts; i++ {
-		k := "port-" + strconv.Itoa(i+PortBase()) + ".qsfp.installed"
+		k := "xeth" + strconv.Itoa(i+PortBase()) + ".qsfp.installed"
 		s := "false"
 		pub.Print(k, ": ", s)
 		lasts[k] = s
@@ -786,7 +786,7 @@ func (m *qsfpMain) poll() {
 					if !strings.Contains(q.Ident.Compliance, "CR") && q.Ident.Compliance != "" {
 						q.Monitoring()
 						for _, k := range sfp.DynamicMonitoringRedisFields {
-							f := "port-" + strconv.Itoa(int(port)+PortBase()) + "." + k
+							f := "xeth" + strconv.Itoa(int(port)+PortBase()) + "." + k
 							if strings.Contains(k, "qsfp.temperature.units.C") {
 								s := q.Mon.Temperature
 								if s != lasts[f] {
@@ -931,7 +931,7 @@ func (m *qsfpMain) poll() {
 								}
 								if s != lasts[f] {
 									if lasts[f] != "" && s != "none" {
-										log.Print("warning: port-" + strconv.Itoa(int(port)+PortBase()) + " qsfp module alarm: " + s)
+										log.Print("warning: xeth" + strconv.Itoa(int(port)+PortBase()) + " qsfp module alarm: " + s)
 									}
 									pub.Print(f, ": ", s)
 									lasts[f] = s
@@ -944,7 +944,7 @@ func (m *qsfpMain) poll() {
 								}
 								if s != lasts[f] {
 									if lasts[f] != "" && s != "none" {
-										log.Print("warning: port-" + strconv.Itoa(int(port)+PortBase()) + " qsfp channel alarm: " + s)
+										log.Print("warning: xeth" + strconv.Itoa(int(port)+PortBase()) + " qsfp channel alarm: " + s)
 									}
 									pub.Print(f, ": ", s)
 									lasts[f] = s
