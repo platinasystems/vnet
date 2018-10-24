@@ -9,6 +9,6 @@ require (
 	github.com/platinasystems/indent v1.1.0
 	github.com/platinasystems/log v1.1.0
 	github.com/platinasystems/redis v1.1.0
-	github.com/platinasystems/xeth v0.0.0-20181010000040-d9ed5089fdd0
+	github.com/platinasystems/xeth v1.1.0
 	gopkg.in/yaml.v2 v2.2.1
 )
