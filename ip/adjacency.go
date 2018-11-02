@@ -492,11 +492,11 @@ func (m *Main) createMpAdj(given nextHopVec, af AdjacencyFinalizer) (madj *multi
 
 	nAdj, norm := resolved.normalizePow2(mp, &mp.cachedNextHopVec[2])
 
-	dbgvnet.Adj.Logf("given nhs:%v\n", given.listNhs(m))
-	dbgvnet.Adj.Logf("resolved nhs:%v\n", resolved.listNhs(m))
-	dbgvnet.Adj.Logf("normalized nhs:%v\n", norm.listNhs(m))
+	dbgvnet.Adj.Logf("given nhs:%v\n", given.ListNhs(m))
+	dbgvnet.Adj.Logf("resolved nhs:%v\n", resolved.ListNhs(m))
+	dbgvnet.Adj.Logf("normalized nhs:%v\n", norm.ListNhs(m))
 
-	// Use given next hops to see if we've seen a block equivalent to this one before.
+	// Use given next hops to see if we've seen a block equivalent to this one before. (not really, norm is built from resolved)
 	i, ok := mp.nextHopHash.Get(norm)
 	if ok {
 		ai := mp.nextHopHashValues[i].adj
@@ -561,7 +561,7 @@ func (m *Main) createMpAdj(given nextHopVec, af AdjacencyFinalizer) (madj *multi
 }
 
 func (m *Main) checkMpAdj(mpAdj Adj) {
-	//very all nh.adj of madj are not themselves multipath
+	//verify all nh.adj of madj are not themselves multipath
 	nhs := m.NextHopsForAdj(mpAdj)
 	fail := false
 	for nhi := range nhs {
@@ -576,7 +576,7 @@ func (m *Main) checkMpAdj(mpAdj Adj) {
 	}
 }
 
-func (nhs nextHopVec) listNhs(m *Main) string {
+func (nhs nextHopVec) ListNhs(m *Main) string {
 	s := ""
 	for nhi := range nhs {
 		nh := &nhs[nhi]
@@ -645,6 +645,10 @@ func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWe
 		nhs      nextHopVec
 		nnh, nhi uint
 	)
+	addOrDel := "add"
+	if isDel {
+		addOrDel = "delete"
+	}
 
 	if oldAdj != AdjNil && oldAdj != AdjMiss {
 		if old = m.mpAdjForAdj(oldAdj, false); old != nil {
@@ -652,8 +656,31 @@ func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWe
 				nhs = mm.getNextHopBlock(&old.givenNextHops)
 				nnh = nhs.Len()
 				nhi, ok = nhs.find(nextHopAdj)
-				if isDel && !ok {
-					fmt.Printf("DEBUG: adjacency.go AddDelNextHop delete old is valid, but failed to find nhAdj %v from oldAdj %v\n", nextHopAdj, oldAdj)
+
+				nhs_string := ""
+				if !ok && m.IsMpAdj(nextHopAdj) && isDel { // Really shouldn't be here anymore; if so could be indicator of bug somewhere else
+					// If nextHopAdj is itself a mpAdj (rare), than try using the its resolved nh if there is only 1
+					// Do this only for delete. For add, need to add the given nextHopAdj if not found; rest would take care of itself later.
+					resolved_nhs := m.NextHopsForAdj(nextHopAdj)
+					if len(resolved_nhs) == 1 {
+						nhi, ok = nhs.find(resolved_nhs[0].Adj)
+					}
+					dbgvnet.Adj.Logf("DEBUG delete failed to find nhAdj %v from oldAdj %v, but found nhAdj's resolved adj %v at nhi %v\n",
+						nextHopAdj, oldAdj, resolved_nhs[0].Adj, nhi)
+					nhs_string = fmt.Sprintf("that's a MpAdj with resolved adjs %v", resolved_nhs.ListNhs(m))
+
+				}
+
+				if isDel && !ok { // Really shouldn't be here anymore; if so could be indicator of bug somewhere else
+					dbgvnet.Adj.Logf("DEBUG adjacency.go AddDelNextHop delete old is valid, but failed to find in oldAdj %v nhAdj %v %v\n", oldAdj, nextHopAdj, nhs_string)
+					if oldAdj == nextHopAdj { // really shouldn't come to this
+						// nhAdj not found in oldAdj, but nhAdj == oldAdj; remove itself
+						ok = true
+						newAdj = AdjNil
+						old.referenceCount--
+						dbgvnet.Adj.Logf(" ...multipathAdj %v referenceCount-- %v\n", old.adj, old.referenceCount)
+						return
+					}
 				}
 			}
 		} else {
@@ -675,7 +702,7 @@ func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWe
 	newNhs := mm.cachedNextHopVec[0]
 	newAdj = AdjNil
 	if isDel {
-		dbgvnet.Adj.Logf("delete adj %v from %v oldNhs:%v ... \n", nextHopAdj, oldAdj, nhs.listNhs(m))
+		dbgvnet.Adj.Logf("delete adj %v from %v oldNhs:%v ... \n", nextHopAdj.String(), oldAdj, nhs.ListNhs(m))
 		// Delete next hop at previously found index.
 		if nhi > 0 {
 			copy(newNhs[:nhi], nhs[:nhi])
@@ -689,6 +716,7 @@ func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWe
 		if nhi < nnh && nhs[nhi].Weight == nextHopWeight {
 			newAdj = oldAdj
 			ok = true
+			dbgvnet.Adj.Logf("add adj %v to %v, same nh and weight, no change\n", nextHopAdj.String(), oldAdj.String())
 			return
 		}
 
@@ -709,7 +737,7 @@ func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWe
 		// In either case set next hop weight.
 		nh.Weight = nextHopWeight
 		dbgvnet.Adj.Logf("add adj %v to %v oldNhs:%v, nnh %v, newNhs before resolve %v ... \n",
-			nextHopAdj, oldAdj, nhs.listNhs(m), nnh, newNhs.listNhs(m))
+			nextHopAdj, oldAdj, nhs.ListNhs(m), nnh, newNhs.ListNhs(m))
 	}
 
 	new = m.addDelHelper(newNhs, old, af)
@@ -717,28 +745,17 @@ func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWe
 		ok = true
 		newAdj = new.adj
 	}
-	if vnet.AdjDebug {
-		if isDel {
-			fmt.Printf("adjacency.go AddDelNextHop delete adj %v from %v, newAdj %v;", nextHopAdj.String(), oldAdj.String(), newAdj.String())
-		} else {
-			fmt.Printf("adjacency.go AddDelNextHop add adj %v to %v newAdj %v;", nextHopAdj.String(), oldAdj.String(), newAdj.String())
-		}
-		if newAdj != AdjNil {
-			resolved_nhs := m.NextHopsForAdj(newAdj)
-			fmt.Printf(" resolved adj:")
-			for _, nh := range resolved_nhs {
-				if m.IsMpAdj(nh.Adj) {
-					fmt.Printf(" %v(isMpAdj!!)", nh.Adj)
-				} else {
-					fmt.Printf(" %v", nh.Adj)
-				}
-			}
-		}
-		fmt.Printf("\n")
-		if isDel && !ok {
-			fmt.Printf("adjacency.go AddDelNextHop delete failed new_is_nil=%v", new == nil)
-		}
+
+	nhAdjs_string := ""
+	if newAdj != AdjNil {
+		resolved_nhs := m.NextHopsForAdj(newAdj)
+		nhAdjs_string += fmt.Sprintf("resolved adj: %v", resolved_nhs.ListNhs(m))
 	}
+	dbgvnet.Adj.Logf("%v adj %v to/from %v, newAdj %v %v\n", addOrDel, nextHopAdj.String(), oldAdj.String(), newAdj.String(), nhAdjs_string)
+	if isDel && !ok {
+		dbgvnet.Adj.Logf("delete failed new_is_nil=%v", new == nil)
+	}
+
 	return
 }
 
@@ -819,7 +836,10 @@ var (
 	ErrNotFound   = errors.New("adjacency not found")
 )
 
-func (m *Main) ReplaceNextHop(ai, fromNextHopAdj, toNextHopAdj Adj, af AdjacencyFinalizer) (err error) {
+func (m *Main) ReplaceNextHop(ai, fromNextHopAdj, toNextHopAdj Adj, af AdjacencyFinalizer) (newAdj Adj, err error) {
+	var new *multipathAdjacency
+	newAdj = ai // if error at any point would return ai as newAdj (i.e. unmodified)
+
 	if fromNextHopAdj == toNextHopAdj {
 		return
 	}
@@ -859,7 +879,15 @@ func (m *Main) ReplaceNextHop(ai, fromNextHopAdj, toNextHopAdj Adj, af Adjacency
 		return
 	}
 
-	m.addDelHelper(given, ma, af)
+	// After addDelHelper, new adjacency may get a different index; update
+	new = m.addDelHelper(given, ma, af)
+	if new != nil { // since this is a replace should never be nil, but just in case
+		newAdj = new.adj
+	} else {
+		newAdj = AdjNil
+	}
+	dbgvnet.Adj.Logf("oldAdj %v replace nhAdj %v with nhAdj %v and got newAdj %v\n", ai, fromNextHopAdj, toNextHopAdj, newAdj)
+
 	return
 }
 
