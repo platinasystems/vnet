@@ -111,6 +111,9 @@ func (c HwIfCombinedCounterKind) Add(t *InterfaceThread, hi Hi, packets, bytes u
 	t.hw.combined[c].Add(uint(hi), packets, bytes)
 }
 
+func (c HwIfCounterKind) Set(t *InterfaceThread, hi Hi, value uint) {
+	t.hw.single[c].Set(uint(hi), uint64(value))
+}
 func (c HwIfCombinedCounterKind) Add64(t *InterfaceThread, hi Hi, packets, bytes uint64) {
 	t.hw.combined[c].Add64(uint(hi), packets, bytes)
 }
@@ -259,7 +262,33 @@ func (v *Vnet) ForeachHwIfCounter(zero bool, unixOnly bool, f func(hi Hi, name s
 		})
 	}
 }
+func (m *interfaceMain) foreachHighFreqHwIfCounter(zero bool, hi Hi, f func(name string, value uint64)) {
+	h := m.HwIfer(hi)
+	t := m.GetIfThread(0)
+	nm := h.GetHwInterfaceCounterNames()
 
+	h.GetHwInterfaceCounterValues(t)
+	i := uint(hi)
+
+	for _,k :=  range t.HfCounters[hi] {
+		m.doHwSingle(f, &nm, zero, uint(k), i)
+	}
+}
+func (v *Vnet) ForeachHighFreqHwIfCounter(zero bool, unixOnly bool, f func(hi Hi, name string, value uint64)) {
+	for hi,_ := range v.GetIfThread(0).HfCounters {
+		hwifer := v.HwIfer(hi)
+		if unixOnly && !hwifer.IsUnix() {
+			continue
+		}
+		h := hwifer.GetHwIf()
+		if h.unprovisioned {
+			continue
+		}
+		v.foreachHighFreqHwIfCounter(zero, hi, func(name string, value uint64) {
+			f(hi, name, value)
+		})
+	}
+}
 func (v *Vnet) syncSwIfCounters() {
 	for i := range v.swIfCounterSyncHooks.hooks {
 		v.swIfCounterSyncHooks.Get(i)(v)
@@ -379,6 +408,7 @@ type interfaceThreadCounters struct {
 type InterfaceThread struct {
 	// This threads' sw/hw interface counters indexed by counter kind.
 	sw, hw interfaceThreadCounters
+	HfCounters map[Hi][]int
 }
 
 func (c *interfaceThreadCounters) resizeSingle(n, m uint) (i uint) {

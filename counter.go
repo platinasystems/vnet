@@ -142,6 +142,9 @@ func (c *CombinedCounters) Add64(i uint, p, b uint64) {
 }
 func (c *CombinedCounters) Add(i uint, p, b uint) { c.Add64(i, uint64(p), uint64(b)) }
 
+func (c *Counters) Set(i uint, x uint64) {
+	c.maxi[i] = x
+}
 // Get counter value: 2 flavors.
 func (c *CombinedCounters) Get(i uint, r *CombinedCounter) {
 	*r = c.values[i]

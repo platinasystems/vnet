@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"sort"
 	"time"
+	"strings"
+	"strconv"
 )
 
 func (hi *Hi) ParseWithArgs(in *parse.Input, args *parse.Args) {
@@ -464,7 +466,126 @@ func (v *Vnet) setHwIf(c cli.Commander, w cli.Writer, in *cli.Input) (err error)
 	}
 	return
 }
+func (v *Vnet) configPortCounterMap(c cli.Commander, w cli.Writer, in *cli.Input) (err error) {
+	var port Hi
+	var ctrs string
+	var counters []string
+	for !in.End() {
+		switch{
+		case !in.Parse("port %v", &port, v):
+			err = fmt.Errorf("%v", "no such hardware interface")
+			return
+		case in.Parse("counters %v", &ctrs):
+			counters = strings.Split(ctrs, ",")
 
+		default:
+			in.ParseError()
+		}
+	}
+	nm := v.HwIfer(port).GetHwInterfaceCounterNames()
+	if len(v.GetIfThread(0).HfCounters) == 0 {
+		v.GetIfThread(0).HfCounters = make(map[Hi][]int)
+	}
+	for _,c := range counters {
+		s := strings.Replace(c,"-"," ",-1)
+		for i,k := range nm.Single{
+			if s == k {
+				alreadyConfigured := false
+				for _,y := range v.GetIfThread(0).HfCounters[port]{
+					if y == i {
+						alreadyConfigured = true
+						break
+					}
+				}
+				if !alreadyConfigured {
+					v.GetIfThread(0).HfCounters[port] = append(v.GetIfThread(0).HfCounters[port], i)
+				}
+				break
+			}
+		}
+	}
+	return
+}
+func (v *Vnet) showPortCounterMap(c cli.Commander, w cli.Writer, in *cli.Input) (err error) {
+	var port Hi
+	if !in.Parse("port %v", &port, v) {
+		err = fmt.Errorf("no such hardware interface")
+		return
+	}
+	nm := v.HwIfer(port).GetHwInterfaceCounterNames()
+	counter, ok := v.GetIfThread(0).HfCounters[port]
+	fmt.Fprintln(w,"Port: ",port.Name(v))
+	if ok && len(counter)!=0{
+		fmt.Fprintf(w,"%-5s %-20s\n","Id","Counter")
+		for _,k := range v.GetIfThread(0).HfCounters[port]{
+			fmt.Fprintf(w,"%-5d %-20s\n",k,nm.Single[k])
+		}
+	}else{
+		err = fmt.Errorf("No counters")
+		return
+	}
+	return
+}
+func (v *Vnet) deletePortCounterMap(c cli.Commander, w cli.Writer, in *cli.Input) (err error) {
+	var port Hi
+	var ctrs string
+	var counters,ids []string
+	if !in.Parse("port %v", &port, v) {
+		err = fmt.Errorf("no such hardware interface")
+		return
+	}
+	var id = make([]int,len(v.GetIfThread(0).HfCounters[port]))
+	for !in.End() {
+		switch{
+		case in.Parse("counters %v", &ctrs):
+			counters = strings.Split(ctrs, ",")
+		case in.Parse("id %v", &ctrs):
+			ids = strings.Split(ctrs, ",")
+			for i,k := range ids {
+				id[i], err = strconv.Atoi(k)
+				if err != nil {
+					err = fmt.Errorf("%s","invalid id entry..")
+					return
+				}
+			}
+		default:
+			in.ParseError()
+		}
+	}
+	if len(id) != 0 {
+		for _, k := range id {
+			for x,y := range v.GetIfThread(0).HfCounters[port]{
+				if k == y {
+					v.GetIfThread(0).HfCounters[port] = append(v.GetIfThread(0).HfCounters[port][:x], v.GetIfThread(0).HfCounters[port][x+1:]...)
+				}
+			}
+		}
+	}else if len(counters) != 0{
+		nm := v.HwIfer(port).GetHwInterfaceCounterNames()
+		for _,c := range counters {
+			s := strings.Replace(c,"-"," ",-1)
+			for i,k := range nm.Single {
+				if s == k {
+					for x,y := range v.GetIfThread(0).HfCounters[port]{
+						if i == y{
+							v.GetIfThread(0).HfCounters[port] = append(v.GetIfThread(0).HfCounters[port][:x],v.GetIfThread(0).HfCounters[port][x+1:]...)
+						}
+					}
+				}
+			}
+		}
+	}else{
+		_, ok := v.GetIfThread(0).HfCounters[port]
+		if ok{
+			delete(v.GetIfThread(0).HfCounters,port)
+		}else{
+			err = fmt.Errorf("No counters")
+			return
+		}
+	}
+
+	return
+}
 func init() {
 	AddInit(func(v *Vnet) {
 		cmds := [...]cli.Command{
@@ -472,6 +593,21 @@ func init() {
 				Name:      "show interfaces",
 				ShortHelp: "show interface statistics",
 				Action:    v.showSwIfs,
+			},
+			cli.Command{
+				Name:      "config-port-counter",
+				ShortHelp: "config port counter",
+				Action:    v.configPortCounterMap,
+			},
+			cli.Command{
+				Name:      "show-port-counter",
+				ShortHelp: "show port counter",
+				Action:    v.showPortCounterMap,
+			},
+			cli.Command{
+				Name:      "delete-port-counter",
+				ShortHelp: "delete port counter",
+				Action:    v.deletePortCounterMap,
 			},
 			cli.Command{
 				Name:      "clear interfaces",
