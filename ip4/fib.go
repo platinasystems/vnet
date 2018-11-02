@@ -495,7 +495,6 @@ func (less *mapFibResult) replaceWithMoreSpecific(m *Main, f *Fib, p *Prefix, ad
 	f.reachable[p.Len][p.mapFibKey()] = *more
 }
 
-// ******** effectively deprecated *********
 func (r *mapFibResult) makeReachable(m *Main, f *Fib, p *Prefix, adj ip.Adj) {
 	// r is a mapFibResult from unreachable that we will move to reachable here
 	for dst, dstMap := range r.nh {
@@ -575,7 +574,7 @@ func (f *Fib) addDelReachable(m *Main, p *Prefix, a ip.Adj, isDel bool) {
 				f.index.Name(&m.Main), p.String(), a, lr, r)
 			lr.replaceWithMoreSpecific(m, f, p, a, &r)
 		}
-		if r, _, ok := f.unreachable.Lookup(p.Address); ok && false { // never move from uncreachable to reachable; let Linux add any new nh
+		if r, _, ok := f.unreachable.Lookup(p.Address); ok {
 			dbgvnet.Adj.Logf("add: %v %v adj %v makeReachable\n", f.index.Name(&m.Main), p.String(), a)
 			r.makeReachable(m, f, p, a)
 		}
