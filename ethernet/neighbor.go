@@ -84,6 +84,7 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 	}
 	if ok {
 		ai, as, ok = im.GetRoute(&prefix, n.Si)
+
 		// Delete from map both of add and delete case.
 		// For add case we'll re-add to indexByAddress.
 		delete(nf.indexByAddress, k)
@@ -96,8 +97,9 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 			}
 
 			im.DelAdj(ai)
+		} else {
+			dbgvnet.Adj.Logf("DEBUG delete neighbor %v but did not find an adj, got ai = %v\n", prefix.Address, ai.String())
 		}
-
 		ai = ip.AdjNil
 		*in = ipNeighbor{}
 	} else {

@@ -767,6 +767,11 @@ func (m *Main) addDelRoute(p *ip.Prefix, fi ip.FibIndex, adj ip.Adj, isDel bool)
 
 	dbgvnet.Adj.Logf("%v %v adj %v\n", addOrDel, q.Address.String(), adj.String())
 
+	oldAdj, _ = f.Get(&q)
+	// If oldAdj is a mpAdj, clean up before replace
+	if m.IsMpAdj(oldAdj) {
+		m.delAllRouteNextHops(f, &q)
+	}
 	//addDel the route to/from fib
 	oldAdj, ok = f.addDel(m, &q, adj, isDel)
 
@@ -1179,6 +1184,7 @@ func (m *Main) AddDelInterfaceAddress(si vnet.Si, addr *Prefix, isDel bool) (err
 			p := FromIp4Prefix(&ifa.Prefix)
 			if !p.IsEqual(addr) && (addr.Address.MatchesPrefix(&p) || p.Address.MatchesPrefix(addr)) {
 				err = fmt.Errorf("%s: add %s conflicts with existing address %s", si.Name(m.Vnet), addr, &p)
+				dbgvnet.Adj.Logf("DEBUG %s: add %s conflicts with existing address %s", si.Name(m.Vnet), addr, &p)
 			}
 			return
 		})
