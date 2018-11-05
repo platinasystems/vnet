@@ -708,11 +708,11 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 		if !exists && devtype == xeth.XETH_DEVTYPE_LINUX_VLAN {
 			m.addDelVlan(intf, iflinkindex, vlanid, isDel)
 		}
-		if !exists && devtype == xeth.XETH_DEVTYPE_XETH_BRIDGE {
+		if !exists && devtype == xeth.XETH_DEVTYPE_LINUX_BRIDGE {
 			si := ns.m.m.v.NewSwIf(vnet.SwBridgeInterface, vnet.IfId(ifindex), intf.name)
 			m.set_si(intf, si)
 			si.SetId(m.v, vnet.IfId(vlanid))
-			dbgfdb.Ifinfo.Log("addDelMk1Interface: Add xeth.XETH_DEVTYPE_XETH_BRIDGE", ifname, vlanid, ifindex, si, intf)
+			dbgfdb.Ifinfo.Log("addDelMk1Interface: Add xeth.XETH_DEVTYPE_LINUX_BRIDGE", ifname, vlanid, ifindex, si, intf)
 		}
 	} else {
 		intf, ok := ns.interface_by_index[ifindex]
@@ -725,8 +725,8 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 			if devtype == xeth.XETH_DEVTYPE_LINUX_VLAN {
 				m.addDelVlan(intf, iflinkindex, vlanid, isDel)
 			}
-			if devtype == xeth.XETH_DEVTYPE_XETH_BRIDGE {
-				dbgfdb.Ifinfo.Log("addDelMk1Interface: Del xeth.XETH_DEVTYPE_XETH_BRIDGE", ifname, vlanid)
+			if devtype == xeth.XETH_DEVTYPE_LINUX_BRIDGE {
+				dbgfdb.Ifinfo.Log("addDelMk1Interface: Del xeth.XETH_DEVTYPE_LINUX_BRIDGE", ifname, vlanid)
 				ns.m.m.v.DelSwIf(intf.si)
 			}
 

@@ -694,7 +694,7 @@ func makePortEntry(msg *xeth.MsgIfinfo, puntIndex uint8) (pe *vnet.PortEntry) {
 
 func isSpecialDevtype(msg *xeth.MsgIfinfo) bool {
 	if msg.Devtype == xeth.XETH_DEVTYPE_LINUX_VLAN ||
-		msg.Devtype == xeth.XETH_DEVTYPE_XETH_BRIDGE {
+		msg.Devtype == xeth.XETH_DEVTYPE_LINUX_BRIDGE {
 		return true
 	}
 	// Hack until driver sends correct devtype - REMOVE
