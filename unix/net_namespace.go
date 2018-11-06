@@ -1173,9 +1173,9 @@ func (ns *net_namespace) del(m *net_namespace_main) {
 		//do not delete hardware interface; platina-mk1 kernel driver will send seperate message to add it back to default ns
 		if intf.si != vnet.SiNil {
 			if intf.si.Kind(m.m.v) == vnet.SwIfKindHardware {
-				// Admin down instead of delete; admin down triggers clean up of neighbors
+				// Cleanup and dmin down instead of delete; does everything DelSwIf does except actually deleting the SwIf
 				// Cleanup must be done before name space is deleted
-				intf.si.SetAdminUp(m.m.v, false)
+				m.m.v.CleanAndDownSwInterface(intf.si)
 			} else {
 				// Delete SwIf, which includes an admin down
 				m.m.v.DelSwIf(intf.si)

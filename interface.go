@@ -9,6 +9,7 @@ import (
 	"github.com/platinasystems/elib/elog"
 	"github.com/platinasystems/elib/loop"
 	"github.com/platinasystems/elib/parse"
+	"github.com/platinasystems/vnet/internal/dbgvnet"
 
 	"errors"
 	"fmt"
@@ -274,6 +275,22 @@ func (m *Vnet) addDelSwInterface(siʹ, supSi Si, kind SwIfKind, id IfId, ifname 
 	}
 
 	return
+}
+
+// remove ifaddr, neighbor via hooks and admin down (removes glean and local fib), but does not delete the SwIf
+func (m *Vnet) CleanAndDownSwInterface(si Si) {
+	dbgvnet.Adj.Logf("%v\n", si.Name(m))
+	if err := si.SetAdminUp(m, false); err != nil {
+		dbgvnet.Adj.Logf("SetAdminDown %v and got error %v\n", si.Name(m), err)
+	}
+
+	for i := range m.swIfAddDelHooks.hooks {
+		err := m.swIfAddDelHooks.Get(i)(m, si, true)
+		if err != nil {
+			dbgvnet.Adj.Logf("call swIfAddDelHooks %v and got error %v\n", si.Name(m), err)
+		}
+	}
+
 }
 
 func (m *Vnet) NewSwIf(kind SwIfKind, id IfId, ifname string) Si {

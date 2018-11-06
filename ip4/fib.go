@@ -1213,13 +1213,16 @@ func (m *Main) AddDelInterfaceAddress(si vnet.Si, addr *Prefix, isDel bool) (err
 		}
 	}
 
-	// Delete interface address.  Return error if deleting non-existent address.
+	// Add/Delete interface address.  Return error if deleting non-existent address.
 	if ia, exists, err = m.Main.AddDelInterfaceAddress(si, &pa, isDel); err != nil {
 		return
 	}
 
 	// If interface is up add interface routes.
 	if isUp && !isDel && !exists {
+		m.addDelInterfaceAddressRoutes(ia, isDel)
+	} else if isUp && !isDel {
+		dbgvnet.Adj.Logf("DEBUG ifaddr %v %v already exist, add-replace the InterfaceAddressRoute again anyway just in case\n", ia.String(&m.Main), m.Main.GetIfAddr(ia).Prefix.String(&m.Main))
 		m.addDelInterfaceAddressRoutes(ia, isDel)
 	}
 
