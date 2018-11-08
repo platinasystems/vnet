@@ -57,18 +57,48 @@ type ipNeighbor struct {
 var ErrDelUnknownNeighbor = errors.New("delete unknown neighbor")
 
 func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool) (ai ip.Adj, err error) {
+	var rwSi vnet.Si
+	var isBridge bool
+	var ctag, stag uint16
+	var br *Bridge
+
 	ai = ip.AdjNil
 	nf := &m.ipNeighborFamilies[im.Family]
+
+	// if bridge, then rwSi is the member port to reach the DA
+	if n.Si.Kind(m.v) == vnet.SwBridgeInterface {
+		isBridge = true
+		// FIXME need to flush fib when L2 entry removed
+		br = GetBridgeBySi(n.Si)
+		stag = br.port.Stag
+
+		// rewrite si port is bridge member
+		// si passed to fe1/fib install_adj() via rewrite is the bridge member to reach DA
+		var da Address
+		copy(da[:], n.Ethernet[:])
+		rwSi, ctag = br.LookupSiCtag(da)
+		if rwSi == vnet.SiNil {
+			dbgvnet.Adj.Logf("DA %+v unresolved for br %v", n.Ethernet[:], br.port.Stag)
+			// if unknown, enqueue for later  FIXME
+			return
+		}
+		dbgvnet.Adj.Logf("rewrite br %v stag %v prefix %v, si %v ctag %v",
+			n.Si.Name(m.v), br.port.Stag, n.Ip, rwSi, ctag)
+	} else {
+		rwSi = n.Si
+		dbgvnet.Adj.Logf("rewrite %v prefix %v",
+			n.Si.Name(m.v), n.Ip)
+	}
 
 	var (
 		k  ipNeighborKey
 		i  uint
 		ok bool
 	)
-	k.Si, k.Ip = n.Si, n.Ip.String()
+	k.Si, k.Ip = rwSi, n.Ip.String()
 	if i, ok = nf.indexByAddress[k]; !ok {
 		if isDel {
-			dbgvnet.Adj.Logf("INFO delete unknown neighbor %v %v\n", n.Si.Name(m.v), n.Ip.String())
+			dbgvnet.Adj.Logf("INFO delete unknown neighbor %v %v", rwSi.Name(m.v), n.Ip.String())
 			err = ErrDelUnknownNeighbor
 			return
 		}
@@ -86,16 +116,18 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 		prefix.Mask = net.CIDRMask(128, 128)
 	}
 	if ok {
-		ai, as, ok = im.GetReachable(&prefix, n.Si)
+		ai, as, ok = im.GetReachable(&prefix, rwSi)
 
 		// Delete from map both of add and delete case.
 		// For add case we'll re-add to indexByAddress.
 		delete(nf.indexByAddress, k)
 	}
+
 	if isDel {
 		if len(as) > 0 {
-			dbgvnet.Adj.Logf("call AddDelRoute to delete %v adj %v from %v\n", prefix.String(), ai.String(), n.Si.Name(m.v))
-			if _, err = im.AddDelRoute(&prefix, im.FibIndexForSi(n.Si), ai, isDel); err != nil {
+			dbgvnet.Adj.Logf("call AddDelRoute to delete %v adj %v from %v",
+				prefix.String(), ai.String(), rwSi.Name(m.v))
+			if _, err = im.AddDelRoute(&prefix, im.FibIndexForSi(rwSi), ai, isDel); err != nil {
 				return
 			}
 
@@ -110,16 +142,38 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 		if is_new_adj {
 			ai, as = im.NewAdj(1)
 		}
-		// update rewrite of new or existing adj
-		m.v.SetRewrite(&as[0].Rewrite, n.Si, im.RewriteNode, im.PacketType, n.Ethernet[:])
+		rw := &as[0].Rewrite
+
+		sw := m.v.SwIf(rwSi)
+		hw := m.v.SupHwIf(sw)
+		if hw == nil {
+			dbgvnet.Adj.Logf("rewrite got nil for SupHwIf; si %v, %v, kind %v, sup_si %v",
+				rwSi, rwSi.Name(m.v), rwSi.Kind(m.v).String(), m.v.SupSi(rwSi))
+			return
+		}
+		rw.Stag = stag
+		h := m.v.SetRewriteNodeHwIf(rw, hw, im.RewriteNode)
+		rw.Si = rwSi
+
+		if isBridge {
+			br.SetRewrite(m.v, rw, im.PacketType, n.Ethernet[:], ctag)
+		} else {
+			h.SetRewrite(m.v, rw, im.PacketType, n.Ethernet[:])
+		}
 		as[0].LookupNextIndex = ip.LookupNextRewrite
+
+		dbgvnet.Adj.Logf("rewrite: new %v, kind %v, si %v, name %v, prefix %v",
+			is_new_adj,
+			rwSi.Kind(m.v),
+			rw.Si,
+			rwSi.Name(m.v),
+			prefix.String(),
+		)
 
 		if is_new_adj {
 			im.CallAdjAddHooks(ai)
 		}
-
-		dbgvnet.Adj.Logf("call AddDelRoute to add %v adj %v to %v\n", prefix.String(), ai.String(), n.Si.Name(m.v))
-		if _, err = im.AddDelRoute(&prefix, im.FibIndexForSi(n.Si), ai, isDel); err != nil {
+		if _, err = im.AddDelRoute(&prefix, im.FibIndexForSi(rwSi), ai, isDel); err != nil {
 			return
 		}
 
@@ -133,7 +187,6 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 		}
 		nf.indexByAddress[k] = i
 	}
-
 	return
 }
 

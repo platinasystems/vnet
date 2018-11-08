@@ -276,20 +276,21 @@ func (m *Vnet) addDelSwInterface(siʹ, supSi Si, kind SwIfKind, id IfId, ifname 
 		si = SiNil
 	}
 
+	dbgvnet.Adj.Logf("si %v.%v %v %v %v, del %v", si, supSi, kind, id, ifname, isDel)
 	return
 }
 
 // remove ifaddr, neighbor via hooks and admin down (removes glean and local fib), but does not delete the SwIf
 func (m *Vnet) CleanAndDownSwInterface(si Si) {
-	dbgvnet.Adj.Logf("%v\n", si.Name(m))
+	dbgvnet.Adj.Logf("%v", si.Name(m))
 	if err := si.SetAdminUp(m, false); err != nil {
-		dbgvnet.Adj.Logf("SetAdminDown %v and got error %v\n", si.Name(m), err)
+		dbgvnet.Adj.Logf("SetAdminDown %v and got error %v", si.Name(m), err)
 	}
 
 	for i := range m.swIfAddDelHooks.hooks {
 		err := m.swIfAddDelHooks.Get(i)(m, si, true)
 		if err != nil {
-			dbgvnet.Adj.Logf("call swIfAddDelHooks %v and got error %v\n", si.Name(m), err)
+			dbgvnet.Adj.Logf("call swIfAddDelHooks %v and got error %v", si.Name(m), err)
 		}
 	}
 
@@ -314,6 +315,13 @@ func (m *Vnet) NewSwSubInterface(supSi Si, id IfId, ifname string) (si Si) {
 }
 func (si Si) IsSwSubInterface(v *Vnet) bool { return v.SwIf(si).kind == SwIfKindSubInterface }
 
+func (m *interfaceMain) SwIfValid(i Si) bool {
+	x := int(i)
+	if x >= 0 && x < len(m.swInterfaces.elts) {
+		return true
+	}
+	return false
+}
 func (m *interfaceMain) SwIf(i Si) *SwIf { return &m.swInterfaces.elts[i] }
 func (m *interfaceMain) SupSi(i Si) Si   { return m.SwIf(i).supSi }
 func (m *interfaceMain) SupSwIf(s *SwIf) (sup *SwIf) {
@@ -366,12 +374,16 @@ func (s *SwIf) builtinSwIfName(vn *Vnet) (v string) {
 	return
 }
 func (i Si) Name(v *Vnet) string {
-	s := v.SwIf(i)
+	if v.SwIfValid(i) {
+		s := v.SwIf(i)
+		return s.name
+	} else {
+		return fmt.Sprintf("si %v ???", i)
+	}
 	/*
 		t := v.swInterfaceTypes[s.kind]
 		return t.SwInterfaceName(v, s)
 	*/
-	return s.name
 }
 func (i Hi) Name(v *Vnet) string { return v.HwIf(i).name }
 

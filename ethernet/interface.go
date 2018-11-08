@@ -10,6 +10,7 @@ import (
 	"github.com/platinasystems/elib/cli"
 	"github.com/platinasystems/elib/parse"
 	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/internal/dbgvnet"
 
 	"errors"
 	"fmt"
@@ -330,6 +331,30 @@ func (et *Type) SetPacketType(pt vnet.PacketType) { *et = rewriteTypeMap[pt].Fro
 type rwHeader struct {
 	Header
 	vlan [2]VlanHeader
+}
+
+func (br *Bridge) SetRewrite(v *vnet.Vnet, rw *vnet.Rewrite, packetType vnet.PacketType, da []byte, ctag uint16) {
+	var h rwHeader
+
+	t := rewriteTypeMap[packetType].FromHost()
+	size := uintptr(SizeofHeader)
+
+	h.Type = TYPE_VLAN.FromHost()
+	h.vlan[0].Tag = VlanTag(ctag).FromHost()
+	h.vlan[0].Type = t
+	size += SizeofVlanHeader
+
+	if len(da) > 0 {
+		copy(h.Dst[:], da)
+	} else {
+		h.Dst = BroadcastAddr
+	}
+	copy(h.Src[:], br.port.Addr[:])
+	dbgvnet.Bridge.Logf("br rewrite hdr=%+v", h)
+	rw.ResetData()
+	rw.AddData(unsafe.Pointer(&h), size)
+
+	return
 }
 
 func (hi *Interface) SetRewrite(v *vnet.Vnet, rw *vnet.Rewrite, packetType vnet.PacketType, da []byte) {

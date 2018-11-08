@@ -16,17 +16,25 @@ import (
 )
 
 //Debug Flags
-var LogSvi bool
 var AdjDebug bool
 
 // drivers/net/ethernet/xeth/platina_mk1.c: xeth.MsgIfinfo
-// PortEntry xeth.XETH_MSG_KIND_IFINFO
-//   also BridgeEntry, BridgeMemberEntry
-// PortProvision from entry Ports
-// BridgeProvision parseBridgeConfig() from entry Bridges,BridgeMembers
+//
+// vnetd.go moved to go/platform/mk1/vnetd.go
+// PortEntry go/main/goes-platina-mk1/vnetd.go:vnetdInit() xeth.XETH_MSG_KIND_IFINFO
+// PortProvision go/main/goes-platina-mk1/vnetd.go:parsePortConfig() from entry Ports
+//
 // PortConfig fe1/platform.go:parsePortConfig() PortProvision
-// BridgeConfig parseBridgeConfig() BridgeProvision
 // Port fe1/internal/fe1a/port_init.go:PortInit()
+//
+// 1. go/main/goes-platina-mk1/vnetd
+// 2. vnet/unix/fdb PortEntry from msg(1)
+// vnetd makes PortProvision(3) from PortEntry
+// platform.go parses portprovision to create PortConfig(4)
+// which PortInit uses to set config structure(5).
+//
+// NOTE: PortEntry is used by port, vlan, and bridge devtypes
+
 type PortEntry struct {
 	Net          uint64
 	Ifindex      int32
@@ -36,7 +44,9 @@ type PortEntry struct {
 	Iff          net.Flags
 	Speed        xeth.Mbps
 	Autoneg      uint8
-	Vid          uint16 // port_vid
+	PortVid      uint16
+	Stag         uint16 // internal vlan tag for bridge
+	Ctag         uint16 // vlan tag to identify vlan member and set l3_iif/vrf via vlan_xlate
 	Portindex    int16
 	Subportindex int8
 	PuntIndex    uint8 // 0-based meth#, derived from Iflinkindex
@@ -47,51 +57,18 @@ type PortEntry struct {
 
 var Ports map[string]*PortEntry
 var PortsByIndex map[int32]*PortEntry // FIXME - driver only sends platina-mk1 type
+var SiByIfindex map[int32]Si
 
-type BridgeEntry struct {
-	Net         uint64
-	Ifindex     int32
-	Iflinkindex int32 // system side eth# ifindex
-	PuntIndex   uint8
-	Addr        [xeth.ETH_ALEN]uint8
-	IPNets      []*net.IPNet
+type BridgeNotifierFn func()
+
+func (v *Vnet) SetSiByIfindex(ifindex uint32, si Si) {
+	if SiByIfindex == nil {
+		SiByIfindex = make(map[int32]Si)
+	}
+	SiByIfindex[int32(ifindex)] = si
 }
 
-// indexed by customer vid
-var Bridges map[uint16]*BridgeEntry
-
-type BridgeMemberEntry struct {
-	Vid      uint16
-	IsTagged bool
-	PortVid  uint16
-}
-
-var BridgeMembers map[string]*BridgeMemberEntry
-
-func SetBridge(vid uint16) *BridgeEntry {
-	if Bridges == nil {
-		Bridges = make(map[uint16]*BridgeEntry)
-	}
-	entry, found := Bridges[vid]
-	if !found {
-		entry = new(BridgeEntry)
-		Bridges[vid] = entry
-	}
-	return entry
-}
-
-func SetBridgeMember(ifname string) *BridgeMemberEntry {
-	if BridgeMembers == nil {
-		BridgeMembers = make(map[string]*BridgeMemberEntry)
-	}
-	entry, found := BridgeMembers[ifname]
-	if !found {
-		entry = new(BridgeMemberEntry)
-		BridgeMembers[ifname] = entry
-	}
-	return entry
-}
-
+// port or bridge member
 func SetPort(ifname string) *PortEntry {
 	if Ports == nil {
 		Ports = make(map[string]*PortEntry)
@@ -129,7 +106,8 @@ func GetNumSubports(ifname string) (numSubports uint) {
 	}
 	portindex := entry.Portindex
 	for _, pe := range Ports {
-		if pe.Portindex == int16(portindex) {
+		if pe.Devtype == xeth.XETH_DEVTYPE_XETH_PORT &&
+			pe.Portindex == int16(portindex) {
 			numSubports++
 		}
 	}
@@ -242,3 +220,68 @@ const (
 	PostReadyVnetd                   // vnetd processing something initated from previous state
 	Dynamic                          // free-run case
 )
+
+// Could collapse all vnet Hooks calls into this message
+// to avoid direct function calls from vnet to fe
+type SviVnetFeMsg struct {
+	data []byte
+}
+
+const (
+	MSG_FROM_VNET = iota
+	MSG_SVI_BRIDGE_ADD
+	MSG_SVI_BRIDGE_DELETE
+	MSG_SVI_BRIDGE_MEMBER_ADD
+	MSG_SVI_BRIDGE_MEMBER_DELETE
+)
+
+const (
+	MSG_FROM_FE = iota + 128
+	MSG_SVI_FDB_ADD
+	MSG_SVI_FDB_DELETE
+)
+
+type FromFeMsg struct {
+	MsgId    uint8
+	Addr     [6]uint8
+	Stag     uint16
+	PipePort uint16
+}
+
+/* removed to avoid concurrent pci
+var SviFromVnetCh chan FromVnetMsg
+
+type FromVnetMsg struct {
+	MsgId     uint8
+	PuntIndex uint8
+	Stag      uint16
+	PortVid   uint16
+	PipePort  uint16
+	Ctag      uint16
+	Addr      [6]uint8
+}
+
+if vnet.SviFromVnetCh != nil {
+	feCfg := vnet.FromVnetMsg{
+		MsgId:    vnet.MSG_SVI_BRIDGE_MEMBER_DELETE,
+		Stag:     brPort.Stag,
+		PipePort: PipePortByPortVid[brPort.PortVid],
+		Ctag:     brPort.Ctag}
+	dbgvnet.Adj.Log("FromVnet", feCfg)
+	vnet.SviFromVnetCh <- feCfg
+}
+*/
+
+var SviFromFeCh chan FromFeMsg // for l2-mod learning event reporting
+
+// simplified hooks for direct calls to fe1 from vnet
+type BridgeAddDelHook_t func(si Si, stag uint16, puntIndex uint8, addr [6]byte, isAdd bool) (err error)
+
+type BridgeMemberAddDelHook_t func(si Si, stag uint16, brmSi Si, pipe_port uint16, ctag uint16, isAdd bool) (err error)
+
+func (v *Vnet) RegisterBridgeAddDelHook(h BridgeAddDelHook_t) {
+	v.BridgeAddDelHook = h
+}
+func (v *Vnet) RegisterBridgeMemberAddDelHook(h BridgeMemberAddDelHook_t) {
+	v.BridgeMemberAddDelHook = h
+}

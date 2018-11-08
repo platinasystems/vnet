@@ -388,7 +388,7 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 					_, err := redis.Hget(redis.DefaultHash, "vnet."+ifname+".speed")
 					for err != nil {
 						if time.Since(start) >= 2*time.Second {
-							log.Print("hget timeout: ", err)
+							log.Print("hget timeout <%v>: %v", ifname, err)
 							break
 						}
 						_, err = redis.Hget(redis.DefaultHash, "vnet."+ifname+".speed")

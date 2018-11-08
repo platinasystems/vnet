@@ -433,7 +433,7 @@ func (m *net_namespace_main) add_del_namespace(e *add_del_namespace_event) (err 
 	name := e.dir.namespace_name(e.file_name)
 
 	if e.is_del {
-		dbgvnet.Adj.Logf("delete_namespace %v\n", name)
+		dbgvnet.Adj.Logf("delete_namespace %v", name)
 		ns := m.namespace_by_name[name]
 		if ns == nil { // delete unknown namespace file
 			return
@@ -446,7 +446,7 @@ func (m *net_namespace_main) add_del_namespace(e *add_del_namespace_event) (err 
 		delete(m.namespace_by_name, name)
 		return
 	}
-	dbgvnet.Adj.Logf("add_namespace %v\n", name)
+	dbgvnet.Adj.Logf("add_namespace %v", name)
 
 	var (
 		ns *net_namespace
@@ -650,7 +650,7 @@ func (ns *net_namespace) add_del_interface(m *Main, msg *netlink.IfInfoMessage) 
 }
 
 func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, ifindex uint32, address [6]byte, devtype uint8, iflinkindex int32, vlanid uint16) (err error) {
-	dbgvnet.Adj.Logf("ns %v %v ifname %v ifindex %v address %v devtype %v iflinkindex %v vlanid %v\n",
+	dbgvnet.Adj.Logf("ns %v %v ifname %v ifindex %v address %v devtype %v iflinkindex %v vlanid %v",
 		ns.name, vnet.IsDel(isDel), ifname, ifindex, address, devtype, iflinkindex, vlanid)
 
 	if !isDel {
@@ -671,11 +671,12 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 			ns.interface_by_index[ifindex] = intf
 			ns.interface_by_name[ifname] = intf
 		} else {
+			dbgvnet.Adj.Logf("%v exists", ifname)
 			name_changed = intf.name != ifname
 		}
 		addr := address[:]
 		if exists && !bytes.Equal(intf.address, addr) {
-			// fixme address change
+			dbgvnet.Adj.Log("addr change") // FIXME cleanup
 		}
 
 		intf.address = make([]byte, len(address))
@@ -708,11 +709,21 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 		if !exists && devtype == xeth.XETH_DEVTYPE_LINUX_VLAN {
 			m.addDelVlan(intf, iflinkindex, vlanid, isDel)
 		}
+		if !exists && devtype == xeth.XETH_DEVTYPE_LINUX_VLAN_BRIDGE_PORT {
+			m.addDelVlan(intf, iflinkindex, vlanid, isDel)
+		}
 		if !exists && devtype == xeth.XETH_DEVTYPE_LINUX_BRIDGE {
 			si := ns.m.m.v.NewSwIf(vnet.SwBridgeInterface, vnet.IfId(ifindex), intf.name)
 			m.set_si(intf, si)
 			si.SetId(m.v, vnet.IfId(vlanid))
-			dbgfdb.Ifinfo.Log("addDelMk1Interface: Add xeth.XETH_DEVTYPE_LINUX_BRIDGE", ifname, vlanid, ifindex, si, intf)
+			dbgfdb.Ifinfo.Log("addDelMk1Interface: Add xeth.XETH_DEVTYPE_LINUX_BRIDGE",
+				ifname, vlanid, ifindex, si, intf)
+
+			ethernet.StartFromFeReceivers()
+			br := vnet.PortsByIndex[int32(ifindex)]
+			if br != nil {
+				m.v.BridgeAddDelHook(si, br.Stag, br.PuntIndex, br.Addr, true)
+			}
 		}
 	} else {
 		intf, ok := ns.interface_by_index[ifindex]
@@ -728,6 +739,11 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 			if devtype == xeth.XETH_DEVTYPE_LINUX_BRIDGE {
 				dbgfdb.Ifinfo.Log("addDelMk1Interface: Del xeth.XETH_DEVTYPE_LINUX_BRIDGE", ifname, vlanid)
 				ns.m.m.v.DelSwIf(intf.si)
+
+				br := vnet.PortsByIndex[int32(ifindex)]
+				if br != nil {
+					m.v.BridgeAddDelHook(intf.si, br.Stag, br.PuntIndex, br.Addr, false)
+				}
 			}
 
 			ns.si_by_ifindex.unset(ifindex)
@@ -813,7 +829,7 @@ func (m *net_namespace_main) addDelVlan(intf *net_namespace_interface, supifinde
 	sup_index := uint32(supifindex)
 	sup_si := vnet.SiNil
 
-	// Look in same namespace as target interface; if not found look in all namespaces (ifindex had better be unique!).
+	// Look in same namespace as target interface; if not found look in all namespaces (ifindex had better be unique!).  FIXME, not unique
 	sup_intf := ns.interface_by_index[sup_index]
 	if sup_intf == nil {
 		sup_intf = m.find_interface_with_ifindex(sup_index)
@@ -828,12 +844,13 @@ func (m *net_namespace_main) addDelVlan(intf *net_namespace_interface, supifinde
 
 	// Sup interface not Vnet interface?
 	if sup_si == vnet.SiNil {
+		dbgvnet.Adj.Log("no sup_si")
 		return
 	}
 
 	v := ns.m.m.v
 	if isDel {
-		dbgvnet.Adj.Logf("ns %v delete si %v\n", ns.name, intf.si.Name(v))
+		dbgvnet.Adj.Logf("ns %v delete si %v", ns.name, intf.si.Name(v))
 		v.DelSwIf(intf.si)
 	} else {
 		id := vnet.Uint16(vlanid)
@@ -848,7 +865,8 @@ func (m *net_namespace_main) addDelVlan(intf *net_namespace_interface, supifinde
 		hw := v.HwIf(hi)
 		si := ns.m.m.v.NewSwSubInterface(hw.Si(), vnet.IfId(eid), intf.name)
 
-		dbgvnet.Adj.Logf("ns %v add sup_si %v sup_si.IsSwSub %v, IfId %v, vlanId %v, si %v\n", ns.name, sup_si, sup_si.IsSwSubInterface(v), vnet.IfId(eid), vlanid, si.Name(v))
+		dbgvnet.Adj.Logf("ns %v add sup_si %v sup_si.IsSwSub %v, IfId %v, vlanId %v, si %v",
+			ns.name, sup_si, sup_si.IsSwSubInterface(v), vnet.IfId(eid), vlanid, si.Name(v))
 		m.set_si(intf, si)
 	}
 	return
@@ -891,6 +909,8 @@ func (m *net_namespace_main) interface_by_name(name string) (ns *net_namespace, 
 }
 
 func (m *net_namespace_main) set_si(intf *net_namespace_interface, si vnet.Si) {
+	dbgfdb.Ns.Log(intf.name, intf.ifindex, si)
+
 	intf.si = si
 
 	ns := intf.namespace
@@ -906,6 +926,7 @@ func (m *net_namespace_main) set_si(intf *net_namespace_interface, si vnet.Si) {
 		m.interface_by_si = make(map[vnet.Si]*net_namespace_interface)
 	}
 	m.interface_by_si[si] = intf
+	m.m.v.SetSiByIfindex(intf.ifindex, si)
 }
 
 func (m *net_namespace_main) RegisterHwInterface(h vnet.HwInterfacer) {
@@ -1173,7 +1194,7 @@ func (ns *net_namespace) del(m *net_namespace_main) {
 		//do not delete hardware interface; platina-mk1 kernel driver will send seperate message to add it back to default ns
 		if intf.si != vnet.SiNil {
 			if intf.si.Kind(m.m.v) == vnet.SwIfKindHardware {
-				// Cleanup and dmin down instead of delete; does everything DelSwIf does except actually deleting the SwIf
+				// Cleanup and admin down instead of delete; does everything DelSwIf does except actually deleting the SwIf
 				// Cleanup must be done before name space is deleted
 				m.m.v.CleanAndDownSwInterface(intf.si)
 			} else {

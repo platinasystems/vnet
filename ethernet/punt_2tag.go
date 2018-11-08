@@ -30,6 +30,7 @@ type PuntConfig struct {
 	AdvanceL3Header     bool
 	NReplaceVlanHeaders uint
 	ReplaceVlanHeaders  [2]VlanTypeAndTag
+	Stag                uint16
 }
 
 type punt_packet_disposition struct {

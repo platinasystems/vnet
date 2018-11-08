@@ -7,8 +7,8 @@ package unix
 import (
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/elib/parse"
-	"github.com/platinasystems/vnet/netlink"
 	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/netlink"
 
 	"regexp"
 	"strings"

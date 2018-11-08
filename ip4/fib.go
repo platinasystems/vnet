@@ -493,7 +493,7 @@ func (f *Fib) addFib(m *Main, r *FibResult) (installed bool) {
 		m.callFibAddDelHooks(f.index, &p, r.Adj, false)
 		installed = true
 		r.Installed = installed
-		dbgvnet.Adj.Logf("installed new\n")
+		dbgvnet.Adj.Logf("installed new")
 		return
 	}
 
@@ -520,7 +520,7 @@ func (f *Fib) addFib(m *Main, r *FibResult) (installed bool) {
 		// least preferred
 		return
 	default:
-		dbgvnet.Adj.Logf("DEBUG unspecifed route type for prefix %v\n", r.Prefix)
+		dbgvnet.Adj.Logf("DEBUG unspecifed route type for prefix %v", r.Prefix)
 		return
 	}
 
@@ -537,7 +537,7 @@ func (f *Fib) delFib(m *Main, r *FibResult) {
 	if r == nil {
 		panic(fmt.Errorf("delFib got nil FibResult pointer for argument"))
 	}
-	dbgvnet.Adj.Logf("%v\n%v", f.index.Name(&m.Main), r.String(m))
+	dbgvnet.Adj.Logf("%v: %v", f.index.Name(&m.Main), r.String(m))
 	if !r.Installed {
 		dbgvnet.Adj.Logf("prefix %v of type %v was not installed to begin with\n",
 			r.Prefix, r.Type)
@@ -919,6 +919,10 @@ func (m *Main) setInterfaceAdjacency(a *ip.Adjacency, si vnet.Si) {
 	}
 
 	a.LookupNextIndex = next
+
+	dbgvnet.Adj.Logf("si %v->%v, adj %+v", a.Si, si, a)
+	a.Si = si
+
 	if h != nil {
 		m.Vnet.SetRewrite(&a.Rewrite, si, noder, packetType, nil /* dstAdr meaning broadcast */)
 	}
@@ -1020,6 +1024,8 @@ func (m *Main) addDelRoute(p *net.IPNet, fi ip.FibIndex, adj ip.Adj, isDel bool)
 
 	if connected, si := adj.IsConnectedRoute(&m.Main); connected { // arped neighbor
 		oldAdj, r, found = f.GetReachable(p, si)
+		dbgvnet.Adj.Logf("found %v, adj %v->%v",
+			found, oldAdj, adj)
 		if isDel && found {
 			f.delFib(m, r)
 			f.addDelReachable(m, r, isDel)

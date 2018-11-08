@@ -7,7 +7,6 @@ package fe1
 import (
 	"github.com/platinasystems/vnet/devices/optics/sfp"
 	"github.com/platinasystems/vnet/ethernet"
-	"github.com/platinasystems/xeth"
 )
 
 type PortProvision struct {
@@ -18,24 +17,11 @@ type PortProvision struct {
 	Portindex    int16
 	Subportindex int8
 	PuntIndex    uint8
-	Vid          ethernet.VlanTag
+	PortVid      ethernet.VlanTag
 }
 
 type PortProvisionConfig struct {
 	Ports []PortProvision
-}
-
-// later may add stg here
-type BridgeProvision struct {
-	PuntIndex        uint8
-	Addr             [xeth.ETH_ALEN]uint8
-	TaggedPortVids   []ethernet.VlanTag
-	UntaggedPortVids []ethernet.VlanTag
-}
-
-// mapped by vid
-type BridgeProvisionConfig struct {
-	Bridges map[ethernet.VlanTag]*BridgeProvision
 }
 
 type PlatformConfig struct {
@@ -49,8 +35,7 @@ type PlatformConfig struct {
 	EnableMsiInterrupt     bool
 	UseCpuForPuntAndInject bool
 
-	PortConfig   PortProvisionConfig
-	BridgeConfig BridgeProvisionConfig
+	PortConfig PortProvisionConfig
 }
 
 type SwitchPort struct {

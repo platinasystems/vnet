@@ -15,7 +15,8 @@ import (
 
 type Rewrite struct {
 	// Software interface to mark re-written packets with.
-	Si Si
+	Si   Si
+	Stag uint16
 
 	// Node where packet will be rewritten.
 	NodeIndex uint32
@@ -38,6 +39,11 @@ func (r *Rewrite) String(v *Vnet) (lines []string) {
 	swt := r.Si.GetType(v)
 	lines = append(lines, r.Si.Name(v))
 	lines = append(lines, swt.SwInterfaceRewriteString(v, r)...)
+	return
+}
+
+func (r *Rewrite) DataDump() (dump string) {
+	dump = fmt.Sprintf("stag %v, len %v, data %x", r.Stag, r.dataLen, r.data)
 	return
 }
 
@@ -85,6 +91,16 @@ func (v *Vnet) SetRewrite(rw *Rewrite, si Si, noder Noder, t PacketType, dstAddr
 	rw.NextIndex = uint32(x)
 	rw.MaxL3PacketSize = uint16(hw.maxPacketSize)
 	h.SetRewrite(v, rw, t, dstAddr)
+}
+
+func (v *Vnet) SetRewriteNodeHwIf(rw *Rewrite, hw *HwIf, noder Noder) (h HwInterfacer) {
+	h = v.HwIfer(hw.hi)
+	n := noder.GetNode()
+	rw.NodeIndex = uint32(n.Index())
+	x, _ := v.loop.AddNext(noder, h)
+	rw.NextIndex = uint32(x)
+	rw.MaxL3PacketSize = uint16(hw.maxPacketSize)
+	return
 }
 
 func PerformRewrite(r0 *Ref, rw0 *Rewrite) {
