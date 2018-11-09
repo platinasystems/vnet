@@ -667,8 +667,7 @@ func (v *Vnet) SwLessThan(a, b *SwIf) bool {
 		return a.kind < b.kind
 	}
 	// Same kind.
-	at := a.GetType(v)
-	return at.SwInterfaceLessThan(v, a, b)
+	return a.name < b.name
 }
 
 // Interface can loopback at MAC or PHY.
