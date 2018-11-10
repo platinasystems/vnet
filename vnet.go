@@ -20,9 +20,9 @@ var LogSvi bool
 var AdjDebug bool
 
 // drivers/net/ethernet/xeth/platina_mk1.c: xeth.MsgIfinfo
-// PortEntry go/main/goes-platina-mk1/vnetd.go:vnetdInit() xeth.XETH_MSG_KIND_IFINFO
+// PortEntry xeth.XETH_MSG_KIND_IFINFO
 //   also BridgeEntry, BridgeMemberEntry
-// PortProvision go/main/goes-platina-mk1/vnetd.go:parsePortConfig() from entry Ports
+// PortProvision from entry Ports
 // BridgeProvision parseBridgeConfig() from entry Bridges,BridgeMembers
 // PortConfig fe1/platform.go:parsePortConfig() PortProvision
 // BridgeConfig parseBridgeConfig() BridgeProvision

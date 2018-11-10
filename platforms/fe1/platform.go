@@ -10,8 +10,6 @@ import (
 	"github.com/platinasystems/xeth"
 )
 
-// from go/main/goes-platina-mk1/vnetd.go:vnetdInit()
-// see go/vnet/vnet.go:PortEntry
 type PortProvision struct {
 	Name         string
 	Lanes        uint
