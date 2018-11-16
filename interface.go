@@ -129,6 +129,8 @@ func (k SwIfKind) String() string {
 		return "SwIfKindHardware"
 	case SwIfKindSubInterface:
 		return "SwIfKindSubInterface"
+	case SwBridgeInterface:
+		return "SwBridgeInterface"
 	case nBuiltinSwIfKind:
 		return "nBuiltinSwIfKind"
 	default:

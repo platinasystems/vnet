@@ -33,6 +33,7 @@ var (
 	// Function flags
 	FdbOn       bool = true
 	FdbIfAddrOn bool = true
+	AllowBridge bool = false
 )
 
 const MAXMSGSPEREVENT = 1000
@@ -328,6 +329,14 @@ func ProcessIpNeighbor(msg *xeth.MsgNeighUpdate, v *vnet.Vnet) (err error) {
 		dbgfdb.Neigh.Log("no si for", msg.Ifindex, "in", ns.name)
 		return
 	}
+
+	// Don't enable bridge feature yet
+	// FIXME, REMOVEME if enabling bridge
+	if !AllowBridge && si.Kind(v) == vnet.SwBridgeInterface {
+		dbgfdb.Neigh.Log("Ignore, for now,  bridge neighbor for ", si.Name(v), "in", ns.name)
+		return
+	}
+
 	nbr := ethernet.IpNeighbor{
 		Si:       si,
 		Ethernet: ethernet.Address(msg.Lladdr),
@@ -731,6 +740,12 @@ func ProcessInterfaceInfo(msg *xeth.MsgIfinfo, action vnet.ActionType, v *vnet.V
 		fallthrough
 	case vnet.Dynamic:
 		dbgfdb.Ifinfo.Log(action, kind, ifname, netns)
+		// FIXME, REMOVEME: ignore bridge interface until feature enabled elsewhere
+		if !AllowBridge && (msg.Devtype == xeth.XETH_DEVTYPE_LINUX_VLAN_BRIDGE_PORT || msg.Devtype == xeth.XETH_DEVTYPE_LINUX_BRIDGE) {
+			dbgfdb.Ifinfo.Log("Ignore, for now, ifinfo for bridge or bridge port",
+				ifname, msg.Ifindex, msg.Net)
+			return
+		}
 		m := GetMain(v)
 		ns := getNsByInode(m, msg.Net)
 		if ns == nil {

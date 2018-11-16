@@ -9,6 +9,7 @@ import (
 	"github.com/platinasystems/elib/hw"
 	"github.com/platinasystems/elib/parse"
 
+	"fmt"
 	"unsafe"
 )
 
@@ -73,6 +74,9 @@ func (r *Rewrite) SetMaxPacketSize(hw *HwIf) { r.MaxL3PacketSize = uint16(hw.max
 func (v *Vnet) SetRewrite(rw *Rewrite, si Si, noder Noder, t PacketType, dstAddr []byte) {
 	sw := v.SwIf(si)
 	hw := v.SupHwIf(sw)
+	if hw == nil {
+		panic(fmt.Errorf("rewrite.go SetRewrite: got nil for SupHwIf; si = %v %v kind %v sup_si = %v\n", si, si.Name(v), si.Kind(v).String(), v.SupSi(si)))
+	}
 	h := v.HwIfer(hw.hi)
 	n := noder.GetNode()
 	rw.Si = si
