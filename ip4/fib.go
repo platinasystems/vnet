@@ -978,7 +978,7 @@ func (f *Fib) addDelRouteNextHop(m *Main, p *Prefix, nha Address, nhr NextHopper
 	if isDel && !ok {
 		//debug print, flag but don't err if deleting
 		//err = &prefixError{s: "unknown destination", p: *p}
-		fmt.Printf("fib.go: deleteing %v unknown destination; maybe already deleted\n", p)
+		dbgvnet.Adj.Logf("fib.go: deleteing %v unknown destination; maybe already deleted\n", p)
 		return
 	}
 
