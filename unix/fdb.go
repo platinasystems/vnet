@@ -344,7 +344,7 @@ func ProcessIpNeighbor(msg *xeth.MsgNeighUpdate, v *vnet.Vnet) (err error) {
 	}
 	m4 := ip4.GetMain(v)
 	em := ethernet.GetMain(v)
-	dbgfdb.Neigh.Log(addDel(isDel), "nbr", nbr)
+	dbgfdb.Neigh.Log(vnet.IsDel(isDel).String(), "nbr", nbr)
 	_, err = em.AddDelIpNeighbor(&m4.Main, &nbr, isDel)
 
 	// Ignore delete of unknown neighbor.
@@ -382,13 +382,13 @@ func ProcessZeroGw(msg *xeth.MsgFibentry, v *vnet.Vnet, ns *net_namespace, isDel
 		}
 		dbgfdb.Ns.Log("namespace", pe.Net, "found")
 		if isLocal {
-			dbgfdb.Fib.Log(addDel(isDel), "local", msg.Prefix())
+			dbgfdb.Fib.Log(vnet.IsDel(isDel).String(), "local", msg.Prefix())
 		} else if isMainUc {
-			dbgfdb.Fib.Log(addDel(isDel), "main", msg.Prefix())
+			dbgfdb.Fib.Log(vnet.IsDel(isDel).String(), "main", msg.Prefix())
 			//m4 := ip4.GetMain(v)
 			//ns.Ip4IfaddrMsg(m4, msg.Prefix(), uint32(xethNhs[0].Ifindex), isDel)
 		} else {
-			dbgfdb.Fib.Log(addDel(isDel),
+			dbgfdb.Fib.Log(vnet.IsDel(isDel).String(),
 				"neither local nor main", msg.Prefix())
 		}
 	} else {
@@ -502,7 +502,7 @@ func (ns *net_namespace) Ip4IfaddrMsg(m4 *ip4.Main, ipnet *net.IPNet, ifindex ui
 	p := ipnetToIP4Prefix(ipnet)
 	dbgfdb.Ifa.Log(ipnet, "-->", p)
 	if si, ok := ns.siForIfIndex(ifindex); ok {
-		dbgfdb.Ifa.Log(addDel(isDel), "si", si)
+		dbgfdb.Ifa.Log(vnet.IsDel(isDel).String(), "si", si)
 		ns.validateFibIndexForSi(si)
 		err = m4.AddDelInterfaceAddress(si, &p, isDel)
 		dbgfdb.Ifa.Log(err)
@@ -994,13 +994,6 @@ func sendFdbEventEthtoolFlags(v *vnet.Vnet) {
 		}
 	}
 	fe.Signal()
-}
-
-func addDel(isDel bool) string {
-	if isDel {
-		return "del"
-	}
-	return "add"
 }
 
 func addDelReplace(isDel, isReplace bool) string {

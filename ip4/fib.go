@@ -371,7 +371,7 @@ func (x *mapFibResult) addDelNextHop(m *Main, pf *Fib, p Prefix, a Address, r Ne
 	id := idst{a: a, i: r.NextHopFibIndex(m)}
 	ip := ipre{p: p, i: pf.index}
 
-	dbgvnet.Adj.Logf("isDel %v id %v ip %v: before %v\n", isDel, id, ip, x)
+	dbgvnet.Adj.Logf("%v id %v ip %v: before %v\n", vnet.IsDel(isDel), id, ip, x)
 
 	if isDel {
 		delete(x.nh[id], ip)
@@ -405,7 +405,7 @@ func (f *Fib) setReachable(m *Main, p *Prefix, pf *Fib, via *Prefix, a Address, 
 	x := f.reachable[vl][va]
 	x.addDelNextHop(m, pf, *p, a, r, isDel)
 	f.reachable[vl][va] = x
-	dbgvnet.Adj.Logf("isDel %v prefix %v via %v nha %v adj %v, new mapFibResult %v\n", isDel, p.String(), via.String(), a, x.adj, x)
+	dbgvnet.Adj.Logf("%v prefix %v via %v nha %v adj %v, new mapFibResult %v\n", vnet.IsDel(isDel), p.String(), via.String(), a, x.adj, x)
 }
 
 // ******** effectively deprecated *********
@@ -550,11 +550,7 @@ func (x *mapFibResult) addUnreachableVia(m *Main, f *Fib, p *Prefix) {
 
 func (f *Fib) addDelReachable(m *Main, p *Prefix, a ip.Adj, isDel bool) {
 	r, _ := f.reachable.Get(p)
-	addOrDel := "add"
-	if isDel {
-		addOrDel = "delete"
-	}
-	dbgvnet.Adj.Logf("%v: %v %v adj %v IsMpAdj %v\n", addOrDel, f.index.Name(&m.Main), p.String(), a, m.IsMpAdj(a))
+	dbgvnet.Adj.Logf("%v: %v %v adj %v IsMpAdj %v\n", vnet.IsDel(isDel), f.index.Name(&m.Main), p.String(), a, m.IsMpAdj(a))
 
 	// Look up less specific reachable route for prefix.
 	lr, _, lok := f.reachable.getLessSpecific(p)
@@ -579,7 +575,7 @@ func (f *Fib) addDelReachable(m *Main, p *Prefix, a ip.Adj, isDel bool) {
 			r.makeReachable(m, f, p, a)
 		}
 	}
-	dbgvnet.Adj.Logf("%v: %v %v adj %v IsMpAdj %v finished: r %v\n", addOrDel, f.index.Name(&m.Main), p.String(), a, m.IsMpAdj(a), r)
+	dbgvnet.Adj.Logf("%v: %v %v adj %v IsMpAdj %v finished: r %v\n", vnet.IsDel(isDel), f.index.Name(&m.Main), p.String(), a, m.IsMpAdj(a), r)
 }
 
 func (f *Fib) addDelUnreachable(m *Main, p *Prefix, pf *Fib, a Address, r NextHopper, isDel bool, recurse bool) (err error) {
@@ -760,12 +756,8 @@ func (m *Main) addDelRoute(p *ip.Prefix, fi ip.FibIndex, adj ip.Adj, isDel bool)
 	f := m.fibByIndex(fi, createFib)
 	q := FromIp4Prefix(p)
 	var ok bool
-	addOrDel := "add"
-	if isDel {
-		addOrDel = "delete"
-	}
 
-	dbgvnet.Adj.Logf("%v %v adj %v\n", addOrDel, q.Address.String(), adj.String())
+	dbgvnet.Adj.Logf("%v %v adj %v\n", vnet.IsDel(isDel), q.Address.String(), adj.String())
 
 	oldAdj, _ = f.Get(&q)
 	// If oldAdj is a mpAdj, clean up before replace
@@ -871,10 +863,6 @@ func (m *Main) delAllRouteNextHops(f *Fib, p *Prefix) {
 func (m *Main) AddDelRouteNextHop(p *Prefix, nh *NextHop, isDel bool, isReplace bool) (err error) {
 	f := m.fibBySi(nh.Si)
 	oldAdj, _ := f.Get(p)
-	addOrDel := "add"
-	if isDel {
-		addOrDel = "delete"
-	}
 
 	// If oldAdj is glean and add, remove it first before adding new nh
 	// If oldAdj is glean and delete, ignore; glean probably replaced the nh sometime ago already.
@@ -914,7 +902,7 @@ func (m *Main) AddDelRouteNextHop(p *Prefix, nh *NextHop, isDel bool, isReplace 
 		m.delAllRouteNextHops(f, p)
 	}
 	dbgvnet.Adj.Logf("call addDelRouteNextHop %v prefix %v oldAdj %v %v %v from AddDelRouteNextHop\n",
-		f.index.Name(&m.Main), p.String(), oldAdj, addOrDel, nh.Address)
+		f.index.Name(&m.Main), p.String(), oldAdj, vnet.IsDel(isDel), nh.Address)
 
 	return f.addDelRouteNextHop(m, p, nh.Address, nh, isDel)
 }
@@ -924,10 +912,6 @@ func (f *Fib) addDelRouteNextHop(m *Main, p *Prefix, nha Address, nhr NextHopper
 		nhAdj, oldAdj, newAdj ip.Adj
 		ok                    bool
 	)
-	addOrDel := "add"
-	if isDel {
-		addOrDel = "delete"
-	}
 
 	if !isDel && nha.MatchesPrefix(p) && p.Address != AddressUint32(0) {
 		err = fmt.Errorf("fib.go addDelRouteNextHop add: prefix %s matches next-hop %s", p, &nha)
@@ -949,7 +933,7 @@ func (f *Fib) addDelRouteNextHop(m *Main, p *Prefix, nha Address, nhr NextHopper
 			// should not be hitting this
 			resolved_nhs := m.NextHopsForAdj(nhAdj)
 			dbgvnet.Adj.Logf("DEBUG %v prefix %v %v nha %v is reachable on prefix %v with a MpAdj %v that has resolved_nhs %v\n",
-				f.index.Name(&m.Main), p.String(), addOrDel, nha, np.String(), nhAdj.String(), resolved_nhs.ListNhs(&m.Main))
+				f.index.Name(&m.Main), p.String(), vnet.IsDel(isDel), nha, np.String(), nhAdj.String(), resolved_nhs.ListNhs(&m.Main))
 		}
 		reachable_via_prefix = np
 	} else {
@@ -971,7 +955,7 @@ func (f *Fib) addDelRouteNextHop(m *Main, p *Prefix, nha Address, nhr NextHopper
 				extra_string += fmt.Sprintf(" resolved nhs adj: %v", resolved_nhs.ListNhs(&m.Main))
 			}
 		}
-		dbgvnet.Adj.Logf("%v: %v prefix %v, %v nha %v to/from unreachable %v\n", addOrDel, f.index.Name(&m.Main), p.String(), addOrDel, nha, extra_string)
+		dbgvnet.Adj.Logf("%v: %v prefix %v, %v nha %v to/from unreachable %v\n", vnet.IsDel(isDel), f.index.Name(&m.Main), p.String(), vnet.IsDel(isDel), nha, extra_string)
 		return
 	}
 
@@ -985,7 +969,7 @@ func (f *Fib) addDelRouteNextHop(m *Main, p *Prefix, nha Address, nhr NextHopper
 	if oldAdj == nhAdj && isDel {
 		// should not hit this
 		dbgvnet.Adj.Logf("DEBUG %v: %v prefix %v nha %v, oldAdj == nhAdj = %v; newAdj=AdjNil; skip AddDelNextHop\n",
-			addOrDel, f.index.Name(&m.Main), p.String(), nha, oldAdj.String())
+			vnet.IsDel(isDel), f.index.Name(&m.Main), p.String(), nha, oldAdj.String())
 		newAdj = ip.AdjNil
 	} else if newAdj, ok = m.AddDelNextHop(oldAdj, nhAdj, nhr.NextHopWeight(), nhr, isDel); !ok { //for nhr NextHopper argument here, only AdjacencyFinalizer is used
 		if true { //if this is a delete, don't error (which would cause panic later); just flag
@@ -1010,7 +994,7 @@ func (f *Fib) addDelRouteNextHop(m *Main, p *Prefix, nha Address, nhr NextHopper
 		nhAdjs_string += fmt.Sprintf("resolved nhs adj: %v", resolved_nhs.ListNhs(&m.Main))
 	}
 	dbgvnet.Adj.Logf("%v: %v prefix %v nha %v,  oldAdj %v, nhAdj %v, newAdj %v %v\n",
-		addOrDel, f.index.Name(&m.Main), p.String(), nha, oldAdj.String(), nhAdj.String(), newAdj.String(), nhAdjs_string)
+		vnet.IsDel(isDel), f.index.Name(&m.Main), p.String(), nha, oldAdj.String(), nhAdj.String(), newAdj.String(), nhAdjs_string)
 
 	if oldAdj != newAdj {
 		// oldAdj != newAdj means index changed because there is now more than 1 nexthop (multiplath)

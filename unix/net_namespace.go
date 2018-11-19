@@ -650,8 +650,8 @@ func (ns *net_namespace) add_del_interface(m *Main, msg *netlink.IfInfoMessage) 
 }
 
 func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, ifindex uint32, address [6]byte, devtype uint8, iflinkindex int32, vlanid uint16) (err error) {
-	dbgvnet.Adj.Logf("ns %v isDel %v ifname %v ifindex %v address %v devtype %v iflinkindex %v vlanid %v\n",
-		ns.name, isDel, ifname, ifindex, address, devtype, iflinkindex, vlanid)
+	dbgvnet.Adj.Logf("ns %v %v ifname %v ifindex %v address %v devtype %v iflinkindex %v vlanid %v\n",
+		ns.name, vnet.IsDel(isDel), ifname, ifindex, address, devtype, iflinkindex, vlanid)
 
 	if !isDel {
 		if ns.interface_by_index == nil {
@@ -807,7 +807,7 @@ func (m *net_namespace_main) add_del_vlan(intf *net_namespace_interface, msg *ne
 
 //this is used in fdb mode
 func (m *net_namespace_main) addDelVlan(intf *net_namespace_interface, supifindex int32, vlanid uint16, isDel bool) (err error) {
-	dbgfdb.Ns.Log(addDel(isDel), supifindex, vlanid)
+	dbgfdb.Ns.Log(vnet.IsDel(isDel).String(), supifindex, vlanid)
 
 	ns := intf.namespace
 	sup_index := uint32(supifindex)

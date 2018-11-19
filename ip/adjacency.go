@@ -685,7 +685,7 @@ func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWe
 			}
 		} else {
 			if vnet.AdjDebug {
-				panic(fmt.Errorf("adjacency.go AddDelNextHop isDel %v nhAdj %v from %v IsMpAdj %v", isDel, nextHopAdj, oldAdj, m.IsMpAdj(oldAdj)))
+				panic(fmt.Errorf("adjacency.go AddDelNextHop %v nhAdj %v from %v IsMpAdj %v", vnet.IsDel(isDel), nextHopAdj, oldAdj, m.IsMpAdj(oldAdj)))
 			}
 		}
 	}

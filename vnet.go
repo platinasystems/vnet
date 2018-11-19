@@ -169,6 +169,15 @@ func (x RxTx) String() (s string) {
 	return elib.Stringer(rxTxStrings[:], int(x))
 }
 
+type IsDel bool
+
+func (x IsDel) String() string {
+	if x {
+		return "delete"
+	}
+	return "add"
+}
+
 //go:generate gentemplate -id initHook -d Package=vnet -d DepsType=initHookVec -d Type=initHook -d Data=hooks github.com/platinasystems/elib/dep/dep.tmpl
 type initHook func(v *Vnet)
 
