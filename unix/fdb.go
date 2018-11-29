@@ -846,11 +846,47 @@ func ProcessInterfaceInfo(msg *xeth.MsgIfinfo, action vnet.ActionType, v *vnet.V
 	return nil
 }
 
+// send XETH_PORT first to ensure (ifindex port) enqueued before (ifindex vlan-interface) which refs port via iflinkindex
 func sendFdbEventIfInfo(v *vnet.Vnet) {
 	m := GetMain(v)
 	fdbm := &m.FdbMain
 	fe := fdbm.GetEvent(vnet.PostReadyVnetd)
+
 	xeth.Interface.Iterate(func(entry *xeth.InterfaceEntry) error {
+		if entry.DevType != xeth.XETH_DEVTYPE_XETH_PORT {
+			return nil
+		}
+		dbgfdb.Ifinfo.Log(entry.Name)
+		buf := xeth.Pool.Get(xeth.SizeofMsgIfinfo)
+		msg := (*xeth.MsgIfinfo)(unsafe.Pointer(&buf[0]))
+		msg.Kind = xeth.XETH_MSG_KIND_IFINFO
+		copy(msg.Ifname[:], entry.Name)
+		msg.Ifindex = entry.Index
+		msg.Iflinkindex = entry.Link
+		copy(msg.Addr[:], entry.HardwareAddr())
+		msg.Net = uint64(entry.Netns)
+		msg.Id = entry.Id
+		msg.Portindex = entry.Port
+		msg.Subportindex = entry.Subport
+		msg.Flags = uint32(entry.Flags)
+		msg.Devtype = uint8(entry.DevType)
+		ok := fe.EnqueueMsg(buf)
+		if !ok {
+			// filled event with messages so send event and start a new one
+			fe.Signal()
+			fe = fdbm.GetEvent(vnet.PostReadyVnetd)
+			ok := fe.EnqueueMsg(buf)
+			if !ok {
+				panic("sendFdbEventIfInfo: Re-enqueue of msg failed")
+			}
+		}
+		return nil
+	})
+
+	xeth.Interface.Iterate(func(entry *xeth.InterfaceEntry) error {
+		if entry.DevType == xeth.XETH_DEVTYPE_XETH_PORT {
+			return nil
+		}
 		dbgfdb.Ifinfo.Log(entry.Name)
 		buf := xeth.Pool.Get(xeth.SizeofMsgIfinfo)
 		msg := (*xeth.MsgIfinfo)(unsafe.Pointer(&buf[0]))
