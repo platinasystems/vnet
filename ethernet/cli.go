@@ -81,7 +81,7 @@ func (m *Main) showIpNeighbor(c cli.Commander, w cli.Writer, in *cli.Input) (err
 
 			ai := ip.AdjNil
 			ln := 0
-			if ai, as, ok = im.GetRoute(&prefix, n.Si); ok {
+			if ai, as, ok = im.GetReachable(&prefix, n.Si); ok {
 				for i := range as {
 					adj_lines = as[i].String(im)
 				}

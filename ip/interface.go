@@ -6,6 +6,7 @@ package ip
 
 import (
 	"github.com/platinasystems/vnet"
+	"github.com/platinasystems/vnet/internal/dbgvnet"
 
 	"fmt"
 )
@@ -59,6 +60,7 @@ func (m *Main) swIfAddDel(v *vnet.Vnet, si vnet.Si, isDel bool) (err error) {
 			a := m.GetIfAddr(ai)
 			k := makeIfAddrMapKey(a.Prefix.Address[:], m.FibIndexForSi(si))
 			delete(m.addrMap, k)
+			dbgvnet.Adj.Logf("DEBUG delete IfAddr %v %v from swIf delete\n", a.Prefix.String(m), si.Name(v))
 			m.ifAddressPool.PutIndex(uint(ai))
 			ai = a.next
 		}
@@ -86,8 +88,18 @@ func (m *ifAddressMain) GetIfAddress(a []uint8, i FibIndex) (ia *IfAddress) {
 	}
 	return
 }
-func (m *ifAddressMain) GetIfAddr(i IfAddr) *IfAddress { return &m.ifAddrs[i] }
-func (m *ifAddressMain) IfFirstAddr(i vnet.Si) IfAddr  { return m.headBySwIf[i] }
+func (m *ifAddressMain) GetIfAddr(i IfAddr) *IfAddress {
+	if int(i) >= len(m.ifAddrs) {
+		panic(fmt.Errorf("GetIfAddr index %v out of range", i))
+	}
+	return &m.ifAddrs[i]
+}
+func (m *ifAddressMain) IfFirstAddr(i vnet.Si) IfAddr {
+	if int(i) >= len(m.headBySwIf) {
+		panic(fmt.Errorf("IfFirstAddr Si %v out of range", i))
+	}
+	return m.headBySwIf[i]
+}
 func (m *ifAddressMain) IfFirstAddress(i vnet.Si) (ifa *IfAddress) {
 	ia := m.IfFirstAddr(i)
 	if ia != IfAddrNil {

@@ -8,6 +8,7 @@ import (
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/vnet"
 
+	"net"
 	"strconv"
 )
 
@@ -29,6 +30,15 @@ func (x Family) String() string {
 
 // Generic ip4/ip6 address: big enough for either.
 type Address [16]uint8
+
+func (a *Address) ToNetIP() (ip net.IP) {
+	ip = append(a[:0:0], a[:]...)
+	return
+}
+
+func (a *Address) String() string {
+	return a.ToNetIP().String()
+}
 
 // Address 32-bit chunk in network byte order.
 func (a *Address) AsUint32(i uint) vnet.Uint32 {

@@ -7,13 +7,13 @@ package unix
 import (
 	"github.com/platinasystems/elib/elog"
 	"github.com/platinasystems/elib/loop"
-	"github.com/platinasystems/vnet/netlink"
 	"github.com/platinasystems/vnet"
 	"github.com/platinasystems/vnet/ethernet"
 	"github.com/platinasystems/vnet/gre"
 	"github.com/platinasystems/vnet/ip"
 	"github.com/platinasystems/vnet/ip4"
 	"github.com/platinasystems/vnet/ip6"
+	"github.com/platinasystems/vnet/netlink"
 
 	"fmt"
 	"sync"
@@ -390,6 +390,7 @@ func (e *netlinkElogEvent) Elog(l *elog.Log) {
 }
 
 func (ns *net_namespace) siForIfIndex(ifIndex uint32) (si vnet.Si, ok bool) {
+	si = vnet.SiNil
 	si, ok = ns.si_by_ifindex.get(ifIndex)
 	return
 }

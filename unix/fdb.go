@@ -23,6 +23,7 @@ import (
 	"github.com/platinasystems/elib/loop"
 	"github.com/platinasystems/vnet"
 	"github.com/platinasystems/vnet/ethernet"
+	"github.com/platinasystems/vnet/internal/dbgvnet"
 	"github.com/platinasystems/vnet/ip"
 	"github.com/platinasystems/vnet/ip4"
 	"github.com/platinasystems/vnet/unix/internal/dbgfdb"
@@ -32,7 +33,6 @@ import (
 var (
 	// Function flags
 	FdbOn       bool = true
-	FdbIfAddrOn bool = true
 	AllowBridge bool = false
 )
 
@@ -248,7 +248,35 @@ func ipnetToIP4Prefix(ipnet *net.IPNet) (p ip4.Prefix) {
 	return
 }
 
-func (ns *net_namespace) parseIP4NextHops(msg *xeth.MsgFibentry) (nhs []ip4_next_hop) {
+func (ns *net_namespace) parseIP4NextHops(msg *xeth.MsgFibentry) (nhs ip.NextHopVec) {
+	if ns == nil {
+		dbgfdb.Fib.Log("ns is nil")
+	} else {
+		dbgfdb.Fib.Log("ns is", ns.name)
+	}
+	xethNhs := msg.NextHops()
+	dbgfdb.Fib.Log(len(xethNhs), "nexthops")
+	nh := ip.NextHop{}
+	for _, xnh := range xethNhs {
+		intf := ns.interface_by_index[uint32(xnh.Ifindex)]
+		if intf == nil {
+			dbgfdb.Fib.Log("no ns-intf for ifindex",
+				xnh.Ifindex)
+			continue
+		}
+		nh.Si = intf.si
+		nh.Weight = ip.NextHopWeight(xnh.Weight)
+		if nh.Weight == 0 {
+			nh.Weight = 1
+		}
+		nh.Address = xnh.IP()
+		dbgvnet.Adj.Logf("nh.Address %v xnh.IP() %v xnh %v\n", nh.Address, xnh.IP(), xnh)
+		nhs = append(nhs, nh)
+	}
+	return
+}
+
+func (ns *net_namespace) parseIP4NextHops_old(msg *xeth.MsgFibentry) (nhs []ip4_next_hop) {
 	if ns.ip4_next_hops != nil {
 		ns.ip4_next_hops = ns.ip4_next_hops[:0]
 	}
@@ -304,6 +332,7 @@ func ProcessIpNeighbor(msg *xeth.MsgNeighUpdate, v *vnet.Vnet) (err error) {
 
 	// For now only doing IPv4
 	if msg.Family != syscall.AF_INET {
+		dbgfdb.Neigh.Log("msg:", msg, "not actioned because not IPv4")
 		return
 	}
 
@@ -322,11 +351,13 @@ func ProcessIpNeighbor(msg *xeth.MsgNeighUpdate, v *vnet.Vnet) (err error) {
 	netns := xeth.Netns(msg.Net)
 	if ns == nil {
 		dbgfdb.Ns.Log("namespace", netns, "not found")
+		dbgfdb.Neigh.Log("DEBUG", vnet.IsDel(isDel).String(), "msg:", msg, "not actioned because namespace", netns, "not found")
 		return
 	}
 	si, ok := ns.siForIfIndex(uint32(msg.Ifindex))
 	if !ok {
-		dbgfdb.Neigh.Log("no si for", msg.Ifindex, "in", ns.name)
+		//dbgfdb.Neigh.Log("no si for", msg.Ifindex, "in", ns.name)
+		dbgfdb.Neigh.Log("DEBUG", vnet.IsDel(isDel).String(), "msg", msg, "not actioned because no si for", msg.Ifindex, "in", ns.name)
 		return
 	}
 
@@ -364,37 +395,43 @@ func ProcessIpNeighbor(msg *xeth.MsgNeighUpdate, v *vnet.Vnet) (err error) {
 func ProcessZeroGw(msg *xeth.MsgFibentry, v *vnet.Vnet, ns *net_namespace, isDel, isLocal, isMainUc bool) (err error) {
 	xethNhs := msg.NextHops()
 	pe := vnet.GetPortByIndex(xethNhs[0].Ifindex)
-	if pe != nil {
+	si, ok := ns.siForIfIndex(uint32(xethNhs[0].Ifindex))
+	if pe != nil && !ok {
+		// found a port entry but no si for it; not expected
+		dbgfdb.Fib.Log("DEBUG found port entry but no si, pe = ", pe)
+	}
+	if pe != nil && ok {
 		// Adds (local comes first followed by main-uc):
 		// If local-local route then stash /32 prefix into Port[] table
 		// If main-unicast route then lookup port in Port[] table and marry
 		// local prefix and main-unicast prefix-len to install interface-address
 		// Dels (main-uc comes first followed by local):
 		//
-		if FdbIfAddrOn {
-			return
-		}
 		m := GetMain(v)
 		ns := getNsByInode(m, pe.Net)
 		if ns == nil {
 			dbgfdb.Ns.Log("namespace", pe.Net, "not found")
+			dbgfdb.Fib.Log("DEBUG", vnet.IsDel(isDel).String(), "msg:", msg, "not actioned because namespace", pe.Net, "not found")
 			return
 		}
 		dbgfdb.Ns.Log("namespace", pe.Net, "found")
-		if isLocal {
-			dbgfdb.Fib.Log(vnet.IsDel(isDel).String(), "local", msg.Prefix())
-		} else if isMainUc {
-			dbgfdb.Fib.Log(vnet.IsDel(isDel).String(), "main", msg.Prefix())
-			//m4 := ip4.GetMain(v)
-			//ns.Ip4IfaddrMsg(m4, msg.Prefix(), uint32(xethNhs[0].Ifindex), isDel)
-		} else {
-			dbgfdb.Fib.Log(vnet.IsDel(isDel).String(),
-				"neither local nor main", msg.Prefix())
+		if ok {
+			m4 := ip4.GetMain(v)
+			if isLocal {
+				dbgfdb.Fib.Log(vnet.IsDel(isDel).String(), "local", msg.Prefix(), "ifindex", xethNhs[0].Ifindex, "si", si, si.Name(v), si.Kind(v), si.GetType(v))
+				m4.AddDelInterfaceAddressRoute(*msg.Prefix(), si, ip4.LOCAL, isDel)
+			} else if isMainUc {
+				dbgfdb.Fib.Log(vnet.IsDel(isDel).String(), "main", msg.Prefix(), "ifindex", xethNhs[0].Ifindex, "si", si, si.Name(v), si.Kind(v), si.GetType(v))
+				m4.AddDelInterfaceAddressRoute(*msg.Prefix(), si, ip4.GLEAN, isDel)
+			} else {
+				dbgfdb.Fib.Log(vnet.IsDel(isDel).String(),
+					"neither local nor main", msg.Prefix(), si.Name(v))
+			}
 		}
 	} else {
 		// dummy processing
 		if isLocal {
-			dbgfdb.Fib.Log("dummy install punt for", msg.Prefix())
+			dbgfdb.Fib.Log("dummy", vnet.IsDel(isDel).String(), "punt for", msg.Prefix(), "ifindex", xethNhs[0].Ifindex)
 			m4 := ip4.GetMain(v)
 			in := msg.Prefix()
 			var addr ip4.Address
@@ -413,7 +450,7 @@ func ProcessZeroGw(msg *xeth.MsgFibentry, v *vnet.Vnet, ns *net_namespace, isDel
 	return
 }
 
-func addrIsZero(addr ip4.Address) bool {
+func addrIsZero(addr net.IP) bool {
 	var aiz bool = true
 	for _, i := range addr {
 		if i != 0 {
@@ -437,6 +474,7 @@ func ProcessFibEntry(msg *xeth.MsgFibentry, v *vnet.Vnet) (err error) {
 	netns := xeth.Netns(msg.Net)
 	rtn := xeth.Rtn(msg.Id)
 	rtt := xeth.RtTable(msg.Type)
+	dbgfdb.Fib.Logf("%v\n", msg)
 	// fwiw netlink handling also filters RTPROT_KERNEL and RTPROT_REDIRECT
 	if msg.Type != xeth.RTN_UNICAST || msg.Id != xeth.RT_TABLE_MAIN {
 		if isLocal {
@@ -454,46 +492,30 @@ func ProcessFibEntry(msg *xeth.MsgFibentry, v *vnet.Vnet) (err error) {
 	isDel := msg.Event == xeth.FIB_EVENT_ENTRY_DEL
 	isReplace := msg.Event == xeth.FIB_EVENT_ENTRY_REPLACE
 
-	p := ipnetToIP4Prefix(msg.Prefix())
-
 	m := GetMain(v)
 	ns := getNsByInode(m, msg.Net)
 	if ns == nil {
 		dbgfdb.Ns.Log("namespace", netns, "not found")
+		dbgfdb.Fib.Log("DEBUG", vnet.IsDel(isDel).String(), "msg:", msg, "not actioned because namespace", msg.Net, "not found")
 		return
 	}
-	nhs := ns.parseIP4NextHops(msg)
+	nhs := ns.parseIP4NextHops(msg) // this gets rid of next hops that are not xeth interfaces or interfaces built on xeth
 	m4 := ip4.GetMain(v)
 
-	dbgfdb.Fib.Log(len(nhs), "nexthops for", netns)
-
-	// Check for dummy processing
 	xethNhs := msg.NextHops()
+	dbgfdb.Fib.Logf("%v%v nexthops for %v\n%v", msg, len(nhs), netns, ns.ShowMsgNextHops(xethNhs))
+	// Check for dummy processing
 	if len(xethNhs) == 1 {
-		var nhAddr ip4.Address
-		copy(nhAddr[:], xethNhs[0].IP())
-		if addrIsZero(nhAddr) {
+		if addrIsZero(xethNhs[0].IP()) {
 			ProcessZeroGw(msg, v, ns, isDel, isLocal, isMainUc)
 			return
 		}
 	}
 
-	// Regular nexthop processing
-	for _, nh := range nhs {
-		if addrIsZero(nh.Address) {
-			ProcessZeroGw(msg, v, nil, isDel, isLocal, isMainUc)
-			return
-		}
-
-		dbgfdb.Fib.Log(addDelReplace(isDel, isReplace), "nexthop", nh.Address,
-			"for", msg.Prefix, "in", netns)
-		err = m4.AddDelRouteNextHop(&p, &nh.NextHop, isDel, isReplace)
-		if err != nil {
-			dbgfdb.Fib.Log(err)
-			return
-		}
-		//This flag should only be set once on first nh because it deletes any previously set nh
-		isReplace = false
+	// handle ipv4 only for now
+	if a4 := msg.Prefix().IP.To4(); len(a4) == net.IPv4len && len(nhs) > 0 {
+		p := ipnetToIP4Prefix(msg.Prefix())
+		m4.AddDelRouteNextHops(ns.fibIndexForNamespace(), &p, nhs, isDel, isReplace)
 	}
 	return
 }
@@ -513,9 +535,6 @@ func (ns *net_namespace) Ip4IfaddrMsg(m4 *ip4.Main, ipnet *net.IPNet, ifindex ui
 }
 
 func ProcessInterfaceAddr(msg *xeth.MsgIfa, action vnet.ActionType, v *vnet.Vnet) (err error) {
-	if !FdbIfAddrOn {
-		return
-	}
 	if msg == nil {
 		sendFdbEventIfAddr(v)
 		return
@@ -568,7 +587,7 @@ func ProcessInterfaceAddr(msg *xeth.MsgIfa, action vnet.ActionType, v *vnet.Vnet
 		dbgfdb.Ifa.Log("PostReadyVnetd", ifaevent)
 		fallthrough
 	case vnet.Dynamic:
-		dbgfdb.Ifa.Log("Dynamic", ifaevent)
+		dbgfdb.Ifa.Log("Dynamic", ifaevent, msg)
 		// vnetd is up and running and received an event, so call into vnet api
 		pe, found := vnet.Ports[ifname]
 		if !found {
@@ -594,6 +613,7 @@ func ProcessInterfaceAddr(msg *xeth.MsgIfa, action vnet.ActionType, v *vnet.Vnet
 				ns.Ip4IfaddrMsg(m4, msg.IPNet(), uint32(pe.Ifindex), msg.IsDel())
 			} else {
 				dbgfdb.Ns.Log("namespace", pe.Net, "not found")
+				dbgfdb.Fib.Log("DEBUG msg:", msg, "not actioned because namespace", pe.Net, "not found")
 			}
 		}
 	}
@@ -750,6 +770,7 @@ func ProcessInterfaceInfo(msg *xeth.MsgIfinfo, action vnet.ActionType, v *vnet.V
 		ns := getNsByInode(m, msg.Net)
 		if ns == nil {
 			dbgfdb.Ns.Log("namespace", netns, "not found")
+			dbgfdb.Ifinfo.Log("DEBUG msg:", msg, "not actioned because namespace", msg.Net, "not found")
 			return
 		}
 		dbgfdb.Ns.Log(action, "namespace", ns.name, "found for", ifname)
@@ -852,67 +873,38 @@ func sendFdbEventIfInfo(v *vnet.Vnet) {
 	fdbm := &m.FdbMain
 	fe := fdbm.GetEvent(vnet.PostReadyVnetd)
 
-	xeth.Interface.Iterate(func(entry *xeth.InterfaceEntry) error {
-		if entry.DevType != xeth.XETH_DEVTYPE_XETH_PORT {
-			return nil
-		}
-		dbgfdb.Ifinfo.Log(entry.Name)
-		buf := xeth.Pool.Get(xeth.SizeofMsgIfinfo)
-		msg := (*xeth.MsgIfinfo)(unsafe.Pointer(&buf[0]))
-		msg.Kind = xeth.XETH_MSG_KIND_IFINFO
-		copy(msg.Ifname[:], entry.Name)
-		msg.Ifindex = entry.Index
-		msg.Iflinkindex = entry.Link
-		copy(msg.Addr[:], entry.HardwareAddr())
-		msg.Net = uint64(entry.Netns)
-		msg.Id = entry.Id
-		msg.Portindex = entry.Port
-		msg.Subportindex = entry.Subport
-		msg.Flags = uint32(entry.Flags)
-		msg.Devtype = uint8(entry.DevType)
-		ok := fe.EnqueueMsg(buf)
-		if !ok {
-			// filled event with messages so send event and start a new one
-			fe.Signal()
-			fe = fdbm.GetEvent(vnet.PostReadyVnetd)
+	for _, i := range [2]bool{false, true} {
+		xeth.Interface.Iterate(func(entry *xeth.InterfaceEntry) error {
+			if qualify := entry.DevType == xeth.XETH_DEVTYPE_XETH_PORT; !i && !qualify || i && qualify {
+				return nil
+			}
+			dbgfdb.Ifinfo.Log(entry.Name)
+			buf := xeth.Pool.Get(xeth.SizeofMsgIfinfo)
+			msg := (*xeth.MsgIfinfo)(unsafe.Pointer(&buf[0]))
+			msg.Kind = xeth.XETH_MSG_KIND_IFINFO
+			copy(msg.Ifname[:], entry.Name)
+			msg.Ifindex = entry.Index
+			msg.Iflinkindex = entry.Link
+			copy(msg.Addr[:], entry.HardwareAddr())
+			msg.Net = uint64(entry.Netns)
+			msg.Id = entry.Id
+			msg.Portindex = entry.Port
+			msg.Subportindex = entry.Subport
+			msg.Flags = uint32(entry.Flags)
+			msg.Devtype = uint8(entry.DevType)
 			ok := fe.EnqueueMsg(buf)
 			if !ok {
-				panic("sendFdbEventIfInfo: Re-enqueue of msg failed")
+				// filled event with messages so send event and start a new one
+				fe.Signal()
+				fe = fdbm.GetEvent(vnet.PostReadyVnetd)
+				ok := fe.EnqueueMsg(buf)
+				if !ok {
+					panic("sendFdbEventIfInfo: Re-enqueue of msg failed")
+				}
 			}
-		}
-		return nil
-	})
-
-	xeth.Interface.Iterate(func(entry *xeth.InterfaceEntry) error {
-		if entry.DevType == xeth.XETH_DEVTYPE_XETH_PORT {
 			return nil
-		}
-		dbgfdb.Ifinfo.Log(entry.Name)
-		buf := xeth.Pool.Get(xeth.SizeofMsgIfinfo)
-		msg := (*xeth.MsgIfinfo)(unsafe.Pointer(&buf[0]))
-		msg.Kind = xeth.XETH_MSG_KIND_IFINFO
-		copy(msg.Ifname[:], entry.Name)
-		msg.Ifindex = entry.Index
-		msg.Iflinkindex = entry.Link
-		copy(msg.Addr[:], entry.HardwareAddr())
-		msg.Net = uint64(entry.Netns)
-		msg.Id = entry.Id
-		msg.Portindex = entry.Port
-		msg.Subportindex = entry.Subport
-		msg.Flags = uint32(entry.Flags)
-		msg.Devtype = uint8(entry.DevType)
-		ok := fe.EnqueueMsg(buf)
-		if !ok {
-			// filled event with messages so send event and start a new one
-			fe.Signal()
-			fe = fdbm.GetEvent(vnet.PostReadyVnetd)
-			ok := fe.EnqueueMsg(buf)
-			if !ok {
-				panic("sendFdbEventIfInfo: Re-enqueue of msg failed")
-			}
-		}
-		return nil
-	})
+		})
+	}
 	fe.Signal()
 }
 
@@ -1003,4 +995,34 @@ func addDelReplace(isDel, isReplace bool) string {
 		return "del"
 	}
 	return "add"
+}
+
+func (ns *net_namespace) ShowMsgNextHops(xethNhs []xeth.NextHop) (s string) {
+	for _, xnh := range xethNhs {
+		intf := ns.interface_by_index[uint32(xnh.Ifindex)]
+		intfName := "nil"
+		if intf != nil {
+			intfName = intf.name
+		}
+		s += fmt.Sprintf("Intf %v; Weight %v; Flags %v; Gw %v; Scope %v; Pad %v\n",
+			intfName, xnh.Weight, xnh.Flags, xnh.IP(), ScopeTranslate(xnh.Scope), xnh.Pad)
+	}
+	return
+}
+
+func ScopeTranslate(scope uint8) string {
+	switch scope {
+	case 255:
+		return "Nowhere"
+	case 254:
+		return "Host"
+	case 253:
+		return "Link"
+	case 200:
+		return "Site" // Ipv6
+	case 0:
+		return "Universe"
+	default:
+		return strconv.Itoa(int(scope))
+	}
 }

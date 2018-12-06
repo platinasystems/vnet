@@ -24,6 +24,7 @@ func Init(v *vnet.Vnet) *ip.Main {
 		RewriteNode:      &m.rewriteNode,
 		PacketType:       vnet.IP4,
 		GetRoute:         m.getRoute,
+		GetReachable:     m.getReachable,
 		GetRouteFibIndex: m.getRouteFibIndex,
 		AddDelRoute:      m.addDelRoute,
 	}

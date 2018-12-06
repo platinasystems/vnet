@@ -16,6 +16,7 @@ type FamilyConfig struct {
 	RewriteNode      vnet.Noder
 	PacketType       vnet.PacketType
 	GetRoute         func(p *Prefix, si vnet.Si) (ai Adj, as []Adjacency, ok bool)
+	GetReachable     func(p *Prefix, si vnet.Si) (ai Adj, as []Adjacency, ok bool)
 	GetRouteFibIndex func(p *Prefix, fi FibIndex) (ai Adj, ok bool)
 	AddDelRoute      func(p *Prefix, fi FibIndex, newAdj Adj, isDel bool) (oldAdj Adj, err error)
 }

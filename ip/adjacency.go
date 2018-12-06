@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net"
 	"sort"
 	"strconv"
 	"unsafe"
@@ -83,25 +84,56 @@ type Adjacency struct {
 	// Number of adjecencies in block.  Greater than 1 means multipath; otherwise equal to 1.
 	NAdj uint16
 
-	// Interface address index for local/arp adjacency.
+	// not used for Local and Glean
 	// Destination index for rewrite.
 	Index uint32
 
 	vnet.Rewrite
 }
 
-func (a *Adjacency) IsRewrite() bool { return a.LookupNextIndex == LookupNextRewrite }
-func (a *Adjacency) IsLocal() bool   { return a.LookupNextIndex == LookupNextLocal }
-func (a *Adjacency) IsGlean() bool   { return a.LookupNextIndex == LookupNextGlean }
+func (ai Adj) getAsSingle(m *Main) (a *Adjacency, ok bool) {
+	if ai == AdjNil {
+		return
+	}
+	if m.IsAdjFree(ai) {
+		return
+	}
+	as := m.GetAdj(ai)
+	if len(as) != 1 || m.IsMpAdj(ai) {
+		return
+	}
+	a = &as[0]
+	ok = true
+	return
+}
 
-func (a *Adjacency) IfAddr() (i IfAddr) {
-	i = IfAddrNil
-	switch a.LookupNextIndex {
-	case LookupNextGlean, LookupNextLocal:
-		i = IfAddr(a.Index)
+func (ai Adj) IsConnectedRoute(m *Main) (conn bool, si vnet.Si) {
+	si = vnet.SiNil
+	if a, ok := ai.getAsSingle(m); ok {
+		conn = a.LookupNextIndex == LookupNextRewrite
+		si = a.Si
 	}
 	return
 }
+func (ai Adj) IsViaRoute(m *Main) bool {
+	return m.IsMpAdj(ai)
+}
+func (ai Adj) IsLocal(m *Main) bool {
+	if a, ok := ai.getAsSingle(m); ok {
+		return a.LookupNextIndex == LookupNextLocal
+	}
+	return false
+}
+func (ai Adj) IsGlean(m *Main) bool {
+	if a, ok := ai.getAsSingle(m); ok {
+		return a.LookupNextIndex == LookupNextGlean
+	}
+	return false
+}
+
+func (a *Adjacency) IsRewrite() bool { return a.LookupNextIndex == LookupNextRewrite }
+func (a *Adjacency) IsLocal() bool   { return a.LookupNextIndex == LookupNextLocal }
+func (a *Adjacency) IsGlean() bool   { return a.LookupNextIndex == LookupNextGlean }
 
 func (a *Adjacency) String(m *Main) (lines []string) {
 	lines = append(lines, a.LookupNextIndex.String())
@@ -117,8 +149,7 @@ func (a *Adjacency) String(m *Main) (lines []string) {
 			lines = append(lines, l[1:]...)
 		}
 	case LookupNextGlean, LookupNextLocal:
-		ifa := IfAddr(a.Index)
-		lines[0] += " " + ifa.String(m)
+		lines[0] += " " + a.Si.Name(m.v)
 	}
 	return
 }
@@ -138,7 +169,7 @@ func (a *Adjacency) ParseWithArgs(in *parse.Input, args *parse.Args) {
 	case LookupNextLocal, LookupNextGlean:
 		var si vnet.Si
 		if in.Parse("%v", &si, m.v) {
-			a.Index = uint32(m.IfFirstAddr(si))
+			a.Index = uint32(si)
 		}
 	}
 }
@@ -208,6 +239,42 @@ type nextHop struct {
 
 	// Relative weight for this next hop.
 	Weight NextHopWeight
+}
+
+type NextHop struct {
+	Address net.IP
+	Si      vnet.Si
+	nextHop
+}
+
+func (n *NextHop) NextHopWeight() NextHopWeight     { return n.Weight }
+func (n *NextHop) NextHopFibIndex(m *Main) FibIndex { return m.FibIndexForSi(n.Si) }
+func (n *NextHop) FinalizeAdjacency(a *Adjacency)   {}
+
+type NextHopVec []NextHop
+
+func (nhs NextHopVec) ListNhs(m *Main) string {
+	s := ""
+	for _, nh := range nhs {
+		s += fmt.Sprintf("  ip:%v intf:%v adj:%v weight:%v\n", nh.Address, nh.Si.Name(m.v), nh.Adj, nh.Weight)
+	}
+	return s
+}
+
+func (nhs NextHopVec) Match(nhs2 []NextHop) bool {
+	if len(nhs) != len(nhs2) {
+		return false
+	}
+	for i, _ := range nhs {
+		if nhs[i].Si != nhs2[i].Si {
+			return false
+		}
+		// works even if addres is nil
+		if !nhs[i].Address.Equal(nhs2[i].Address) {
+			return false
+		}
+	}
+	return true
 }
 
 //go:generate gentemplate -d Package=ip -id nextHopHeap -d HeapType=nextHopHeap -d Data=elts -d Type=nextHop github.com/platinasystems/elib/heap.tmpl
@@ -521,6 +588,7 @@ func (m *Main) createMpAdj(given nextHopVec, af AdjacencyFinalizer) (madj *multi
 
 	// Copy next hops into power of 2 adjacency block one for each weight.
 	ai, as := m.NewAdj(nAdj)
+	dbgvnet.Adj.Logf("get new ai %v for %v nhs\n", ai, nAdj)
 	for nhi := range norm {
 		nh := &norm[nhi]
 		nextHopAdjacency := &m.adjacencyHeap.elts[nh.Adj]
@@ -537,6 +605,7 @@ func (m *Main) createMpAdj(given nextHopVec, af AdjacencyFinalizer) (madj *multi
 	madj = m.mpAdjForAdj(ai, true)
 	if madj == nil {
 		// self-protect
+		dbgvnet.Adj.Log("self-protect return")
 		return
 	}
 	madj.adj = ai
@@ -638,6 +707,86 @@ func (m *adjacencyMain) NextHopsForAdj(a Adj) (nhs nextHopVec) {
 	return
 }
 
+func (m *Main) DelNextHopsAdj(oldAdj Adj) (ok bool) {
+	old := m.mpAdjForAdj(oldAdj, false)
+	if old == nil {
+		dbgvnet.Adj.Logf("adj %v not found\n", oldAdj)
+		return
+	} else {
+		old.referenceCount--
+		dbgvnet.Adj.Logf("multipathAdj %v referenceCount-- %v\n", old.adj, old.referenceCount)
+		if old.referenceCount == 0 {
+			old.free(m)
+		}
+		ok = true
+	}
+	return
+}
+
+func (m *Main) AddNextHopsAdj(nhs NextHopVec) (newAdj Adj, ok bool) {
+	dbgvnet.Adj.Log("add nhs:\n", nhs.ListNhs(m))
+	nnh := uint(len(nhs))
+	newAdj = AdjNil
+	if nnh == 0 {
+		dbgvnet.Adj.Log("DEBUG adding an empty set of next hops")
+		return
+	}
+	// make NextHopVec into a nextHopVec
+	// skip non rewrites
+	//mm := &m.multipathMain
+	//mm.cachedNextHopVec[0].Validate(nnh)
+	//newNhs := mm.cachedNextHopVec[0]
+	newNhs := nextHopVec{}
+	for _, nh := range nhs {
+		if ok, _ := nh.Adj.IsConnectedRoute(m); ok {
+			newNhs = append(newNhs, nh.nextHop)
+		}
+	}
+	if len(newNhs) == 0 {
+		// not a failure, just means no adjacency
+		ok = true
+		return
+	}
+	new := m.createMpAdj(newNhs, nil)
+	if new != nil {
+		new.referenceCount++
+		dbgvnet.Adj.Logf("multipathAdj %v referenceCount++ %v\n", new.adj, new.referenceCount)
+		newAdj = new.adj
+		ok = true
+		{
+			new_nhs := m.NextHopsForAdj(newAdj)
+			adjs := m.GetAdj(newAdj)
+			ai := Adj(0)
+			failed := false
+			for _, nnh := range new_nhs {
+				si := adjs[ai].Si
+				found := false
+				for _, nh := range nhs {
+					if si == nh.Si {
+						found = true
+						break
+					}
+				}
+				if !found {
+					dbgvnet.Adj.Logf("DEBUG DEBUG %v adj %v in newAdjs is not in requested nexthops", adjs[ai].String(m), nnh.Adj)
+					failed = true
+				}
+				ai += Adj(nnh.Weight)
+			}
+			if failed {
+				dbgvnet.Adj.Log("DEBUG DEBUG requested and new nexthops don't match")
+				dbgvnet.Adj.Logf("DEBUG DEBUG requested:\n%v", nhs.ListNhs(m))
+				dbgvnet.Adj.Logf("DEBUG DEBUG new: %v\n", new_nhs.ListNhs(m))
+			}
+
+		}
+
+	} else {
+		dbgvnet.Adj.Log("DEBUG got nil for new adjacency")
+	}
+	return
+}
+
 func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWeight, af AdjacencyFinalizer, isDel bool) (newAdj Adj, ok bool) {
 	mm := &m.multipathMain
 	var (
@@ -645,10 +794,6 @@ func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWe
 		nhs      nextHopVec
 		nnh, nhi uint
 	)
-	addOrDel := "add"
-	if isDel {
-		addOrDel = "delete"
-	}
 
 	if oldAdj != AdjNil && oldAdj != AdjMiss {
 		if old = m.mpAdjForAdj(oldAdj, false); old != nil {
@@ -751,7 +896,7 @@ func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWe
 		resolved_nhs := m.NextHopsForAdj(newAdj)
 		nhAdjs_string += fmt.Sprintf("resolved adj: %v", resolved_nhs.ListNhs(m))
 	}
-	dbgvnet.Adj.Logf("%v adj %v to/from %v, newAdj %v %v\n", addOrDel, nextHopAdj.String(), oldAdj.String(), newAdj.String(), nhAdjs_string)
+	dbgvnet.Adj.Logf("%v adj %v to/from %v, newAdj %v %v\n", vnet.IsDel(isDel), nextHopAdj.String(), oldAdj.String(), newAdj.String(), nhAdjs_string)
 	if isDel && !ok {
 		dbgvnet.Adj.Logf("delete failed new_is_nil=%v", new == nil)
 	}
@@ -777,7 +922,7 @@ func (m *Main) addDelHelper(newNhs nextHopVec, old *multipathAdjacency, af Adjac
 		}
 		if new != nil {
 			new.referenceCount++
-			dbgvnet.Adj.Logf("multipathAdj %v referenceCount++ %v\n", new.adj, new.referenceCount)
+			dbgvnet.Adj.Logf(" multipathAdj %v referenceCount++ %v\n", new.adj, new.referenceCount)
 		}
 	}
 	if old != nil && old.referenceCount == 0 {
@@ -1007,10 +1152,12 @@ func (m *adjacencyMain) EqualAdj(ai0, ai1 Adj) (same bool) {
 }
 
 func (m *adjacencyMain) GetAdj(a Adj) (as []Adjacency) { return m.adjacencyHeap.Slice(uint(a)) }
-func (m *adjacencyMain) GetAdjRewriteSi(a Adj) (si vnet.Si) {
+func (m *adjacencyMain) GetAdjRewriteSi(a Adj) (si vnet.Si, ok bool) {
+	si = vnet.SiNil
 	as := m.GetAdj(a)
 	if as[0].LookupNextIndex == LookupNextRewrite {
 		si = as[0].Rewrite.Si
+		ok = true
 	}
 	return
 }

@@ -66,6 +66,7 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 	k.Si, k.Ip = n.Si, n.Ip
 	if i, ok = nf.indexByAddress[k]; !ok {
 		if isDel {
+			dbgvnet.Adj.Logf("DEBUG delete unknown neighbor %v %v\n", n.Si.Name(m.v), n.Ip.String())
 			err = ErrDelUnknownNeighbor
 			return
 		}
@@ -83,7 +84,7 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 		prefix.Len = 128
 	}
 	if ok {
-		ai, as, ok = im.GetRoute(&prefix, n.Si)
+		ai, as, ok = im.GetReachable(&prefix, n.Si)
 
 		// Delete from map both of add and delete case.
 		// For add case we'll re-add to indexByAddress.
@@ -107,6 +108,7 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 		if is_new_adj {
 			ai, as = im.NewAdj(1)
 		}
+		// update rewrite of new or existing adj
 		m.v.SetRewrite(&as[0].Rewrite, n.Si, im.RewriteNode, im.PacketType, n.Ethernet[:])
 		as[0].LookupNextIndex = ip.LookupNextRewrite
 
@@ -139,6 +141,7 @@ func (m *ipNeighborMain) delKey(nf *ipNeighborFamily, k *ipNeighborKey) (err err
 		Si: k.Si,
 	}
 	const isDel = true
+	dbgvnet.Adj.Logf("DEBUG delete neighbor %v %v from swIf delete\n", n.Si.Name(m.v), n.Ip.String())
 	_, err = m.AddDelIpNeighbor(nf.m, &n, isDel)
 	return
 }

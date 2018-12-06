@@ -69,5 +69,10 @@ func (n *Neighbor) FinalizeAdjacency(a *ip.Adjacency) {
 func (m *Main) AddDelRouteNeighbor(p *Prefix, n *Neighbor, fi ip.FibIndex, isDel bool) (err error) {
 	n.m = m
 	f := m.fibByIndex(fi, true)
-	return f.addDelRouteNextHop(m, p, n.Header.Dst, n, isDel)
+	if adj, _, ok := f.GetReachable(p, n.LocalSi); ok {
+		return f.addDelRouteNextHop(m, p, n.Header.Dst, n, adj, isDel)
+	} else {
+		err = fmt.Errorf("neighbor not reachable")
+	}
+	return
 }

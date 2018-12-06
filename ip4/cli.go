@@ -47,17 +47,10 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 	// Sync adjacency stats with hardware.
 	m.CallAdjSyncCounterHooks()
 
-	type unreachable struct {
-		valid       bool
-		via         Address
-		viaFibIndex ip.FibIndex
-		weight      ip.NextHopWeight
-	}
 	type route struct {
 		prefixFibIndex ip.FibIndex
 		prefix         Prefix
-		r              mapFibResult
-		u              unreachable
+		r              FibResult
 	}
 	rs := []route{}
 	for fi := range m.fibs {
@@ -67,28 +60,29 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 		}
 		t := ip.FibIndex(fi).Name(&m.Main)
 		if cf.showTable != "" && t != cf.showTable {
+			rt := route{prefixFibIndex: ip.FibIndex(fi)}
+			rs = append(rs, rt)
 			continue
 		}
-		fib.reachable.foreach(func(p *Prefix, r mapFibResult) {
+		fib.reachable.foreach(func(p *Prefix, r FibResult) {
 			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: *p, r: r}
 			rs = append(rs, rt)
 		})
-		fib.unreachable.foreach(func(p *Prefix, r mapFibResult) {
-			rt := route{prefix: *p, r: r}
-			u := unreachable{
-				valid: true,
-			}
-			for nh, ps := range r.nh {
-				u.via = nh.a
-				u.viaFibIndex = nh.i
-				for pi, nher := range ps {
-					rt.prefix = pi.p
-					rt.prefixFibIndex = pi.i
-					u.weight = nher.NextHopWeight()
-					rt.u = u
-					rs = append(rs, rt)
-				}
-			}
+		fib.routeFib.foreach(func(p *Prefix, r FibResult) {
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: *p, r: r}
+			rs = append(rs, rt)
+		})
+		fib.glean.foreach(func(p *Prefix, r FibResult) {
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: *p, r: r}
+			rs = append(rs, rt)
+		})
+		fib.local.foreach(func(p *Prefix, r FibResult) {
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: *p, r: r}
+			rs = append(rs, rt)
+		})
+		fib.punt.foreach(func(p *Prefix, r FibResult) {
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: *p, r: r}
+			rs = append(rs, rt)
 		})
 	}
 	sort.Slice(rs, func(i, j int) bool {
@@ -97,28 +91,39 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 		}
 		return rs[i].prefix.LessThan(&rs[j].prefix)
 	})
-
 	fmt.Fprintf(w, "%6s%30s%40s\n", "Table", "Destination", "Adjacency")
 	for ri := range rs {
 		r := &rs[ri]
 		var lines []string
-		if r.u.valid {
-			nhs := fmt.Sprintf("%10sunreachable via %v", "", &r.u.via)
-			if r.u.viaFibIndex != r.prefixFibIndex {
-				nhs += ", table " + r.u.viaFibIndex.Name(&m.Main)
+		if r.r.Adj != ip.AdjNil && r.r.Adj != ip.AdjMiss {
+			lines = m.adjLines(r.r.Adj, cf.detail, r.r.Installed)
+		}
+		in := "---------"
+		if r.r.Installed {
+			in = "Installed"
+		}
+		header := fmt.Sprintf("%12s%25s%15v", r.prefixFibIndex.Name(&m.Main), &r.prefix, in)
+		indent := fmt.Sprintf("%12s%25s%15v", "", "", "")
+		if r.r.Type == VIA {
+			for i, nh := range r.r.Nhs {
+				reach := ""
+				if nh.Adj == ip.AdjNil || nh.Adj == ip.AdjMiss {
+					reach = "unreachable"
+				}
+				line := fmt.Sprintf("%6svia %20v dev %10v weight %3v  %v",
+					"", nh.Address, nh.Si.Name(m.v), nh.Weight, reach)
+				if i == 0 {
+					fmt.Fprintf(w, "%v%v\n", header, line)
+				} else {
+					fmt.Fprintf(w, "%v%v\n", indent, line)
+				}
 			}
-			if r.u.weight != 1 {
-				nhs += fmt.Sprintf(", weight %d", r.u.weight)
-			}
-			lines = []string{nhs}
-		} else {
-			lines = m.adjLines(r.r.adj, cf.detail)
 		}
 		for i := range lines {
-			if i == 0 {
-				fmt.Fprintf(w, "%12s%30s%s\n", r.prefixFibIndex.Name(&m.Main), &r.prefix, lines[i])
+			if i == 0 && (r.r.Type != VIA || len(r.r.Nhs) == 0) {
+				fmt.Fprintf(w, "%v%s\n", header, lines[i])
 			} else {
-				fmt.Fprintf(w, "%12s%30s%s\n", "", "", lines[i])
+				fmt.Fprintf(w, "%v%s\n", indent, lines[i])
 			}
 		}
 	}
@@ -133,16 +138,24 @@ func (m *Main) clearIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err err
 	return
 }
 
-func (m *Main) adjLines(baseAdj ip.Adj, detail bool) (lines []string) {
+func (m *Main) adjLines(baseAdj ip.Adj, detail bool, installed bool) (lines []string) {
 	const initialSpace = "  "
 	nhs := m.NextHopsForAdj(baseAdj)
 	adjs := m.GetAdj(baseAdj)
+	if len(adjs) == 0 || adjs == nil {
+		lines = append(lines, fmt.Sprintf("%s%6d: empty adjacency", initialSpace, baseAdj))
+		return
+	}
 	ai := ip.Adj(0)
 	for ni := range nhs {
 		nh := &nhs[ni]
 		adj := baseAdj + ai
 		line := fmt.Sprintf("%s%6d: ", initialSpace, adj)
 		ss := []string{}
+		if int(ai) >= len(adjs) {
+			lines = append(lines, fmt.Sprintf("adj %v out of range", ai))
+			return
+		}
 		adj_lines := adjs[ai].String(&m.Main) // problem here if no hwif and no hwif.name
 		if nh.Weight != 1 || nh.Adj != baseAdj {
 			// adj_lines[0] += fmt.Sprintf(" %d-%d, %d x %d", adj, adj+ip.Adj(nh.Weight)-1, nh.Weight, nh.Adj)
@@ -158,13 +171,14 @@ func (m *Main) adjLines(baseAdj ip.Adj, detail bool) (lines []string) {
 		if !m.EqualAdj(adj, nh.Adj) {
 			counterAdj = adj
 		}
-
-		m.Main.ForeachAdjCounter(counterAdj, func(tag string, v vnet.CombinedCounter) {
-			if v.Packets != 0 && detail {
-				ss = append(ss, fmt.Sprintf("%s%spackets %16d", initialSpace, tag, v.Packets))
-				ss = append(ss, fmt.Sprintf("%s%sbytes   %16d", initialSpace, tag, v.Bytes))
-			}
-		})
+		if installed {
+			m.Main.ForeachAdjCounter(counterAdj, func(tag string, v vnet.CombinedCounter) {
+				if v.Packets != 0 && detail {
+					ss = append(ss, fmt.Sprintf("%s%spackets %16d", initialSpace, tag, v.Packets))
+					ss = append(ss, fmt.Sprintf("%s%sbytes   %16d", initialSpace, tag, v.Bytes))
+				}
+			})
+		}
 
 		for _, s := range ss {
 			lines = append(lines, line+s)
