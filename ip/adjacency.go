@@ -675,6 +675,9 @@ func (m *Main) IsMpAdj(a Adj) bool {
 }
 
 func (m *adjacencyMain) mpAdjForAdj(a Adj, create bool) (ma *multipathAdjacency) {
+	if a == AdjNil {
+		return
+	}
 	if int(a) >= len(m.adjacencyHeap.elts) {
 		fmt.Printf("adjacency.go mpAdjForAdj: index out of range adj %v\n", a.String())
 		return
