@@ -30,6 +30,7 @@ func Init(v *vnet.Vnet) *ip.Main {
 	}
 	m.Main.PackageInit(v, cf)
 	v.RegisterSwIfAdminUpDownHook(m.swIfAdminUpDown)
+	v.RegisterSwIfAddDelHook(m.swIfAddDel)
 	m.DependsOn("pg", "ethernet")
 	return &m.Main
 }

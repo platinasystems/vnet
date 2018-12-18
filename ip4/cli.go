@@ -107,8 +107,8 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 		if r.r.Type == VIA {
 			for i, nh := range r.r.Nhs {
 				reach := ""
-				if nh.Adj == ip.AdjNil || nh.Adj == ip.AdjMiss {
-					reach = "unreachable"
+				if nh.Adj == ip.AdjNil || nh.Adj == ip.AdjMiss || nh.Adj == ip.AdjPunt {
+					reach = "unresolved"
 				}
 				line := fmt.Sprintf("%6svia %20v dev %10v weight %3v  %v",
 					"", nh.Address, nh.Si.Name(m.v), nh.Weight, reach)
@@ -171,9 +171,9 @@ func (m *Main) adjLines(baseAdj ip.Adj, detail bool, installed bool) (lines []st
 		if !m.EqualAdj(adj, nh.Adj) {
 			counterAdj = adj
 		}
-		if installed {
+		if installed && detail {
 			m.Main.ForeachAdjCounter(counterAdj, func(tag string, v vnet.CombinedCounter) {
-				if v.Packets != 0 && detail {
+				if v.Packets != 0 {
 					ss = append(ss, fmt.Sprintf("%s%spackets %16d", initialSpace, tag, v.Packets))
 					ss = append(ss, fmt.Sprintf("%s%sbytes   %16d", initialSpace, tag, v.Bytes))
 				}
