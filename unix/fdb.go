@@ -429,23 +429,19 @@ func ProcessZeroGw(msg *xeth.MsgFibentry, v *vnet.Vnet, ns *net_namespace, isDel
 			}
 		}
 	} else {
-		// dummy processing
-		if isLocal {
-			dbgfdb.Fib.Log("dummy", vnet.IsDel(isDel).String(), "punt for", msg.Prefix(), "ifindex", xethNhs[0].Ifindex)
-			m4 := ip4.GetMain(v)
-			in := msg.Prefix()
-			var addr ip4.Address
-			for i := range in.IP {
-				addr[i] = in.IP[i]
-			}
-			// Filter 127.*.*.* routes
-			if addr[0] == 127 {
-				return
-			}
-			p := ip4.Prefix{Address: addr, Len: 32}
-			q := p.ToIpPrefix()
-			m4.AddDelRoute(&q, ns.fibIndexForNamespace(), ip.AdjPunt, isDel)
+		// punt for any other interface not a front-panel or vlans on a front-panel
+		dbgfdb.Fib.Log("Non-front-panel", vnet.IsDel(isDel).String(), "punt for", msg.Prefix(), "ifindex", xethNhs[0].Ifindex)
+		m4 := ip4.GetMain(v)
+		in := msg.Prefix()
+		var addr ip4.Address
+		for i := range in.IP {
+			addr[i] = in.IP[i]
 		}
+		// Filter 127.*.*.* routes
+		if addr[0] == 127 {
+			return
+		}
+		m4.AddDelRoute(in, ns.fibIndexForNamespace(), ip.AdjPunt, isDel)
 	}
 	return
 }
