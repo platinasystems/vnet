@@ -10,6 +10,7 @@ import (
 	"github.com/platinasystems/vnet/ip"
 
 	"fmt"
+	"net"
 )
 
 type showNeighborConfig struct {
@@ -65,16 +66,16 @@ func (m *Main) showIpNeighbor(c cli.Commander, w cli.Writer, in *cli.Input) (err
 				ok        bool
 				as        []ip.Adjacency
 				adj_lines []string
-				prefix    ip.Prefix
+				prefix    net.IPNet
 			)
 
-			prefix.Address = n.Ip
-			prefix.Len = 32
+			prefix.IP = n.Ip
+			prefix.Mask = net.CIDRMask(32, 32)
 			if ip.Family(ipFamily) == ip.Ip6 {
-				prefix.Len = 128
+				prefix.Mask = net.CIDRMask(128, 128)
 			}
 
-			ipAddr := im.AddressStringer(&n.Ip)
+			ipAddr := n.Ip.String()
 			//mac := n.Ethernet.String()
 			intf := n.Si.Name(v)
 			lladdr := n.Ethernet.String()

@@ -9,7 +9,9 @@ import (
 	"github.com/platinasystems/vnet"
 	"github.com/platinasystems/vnet/ip"
 
+	"bytes"
 	"fmt"
+	"net"
 	"sort"
 )
 
@@ -49,7 +51,7 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 
 	type route struct {
 		prefixFibIndex ip.FibIndex
-		prefix         Prefix
+		prefix         net.IPNet
 		r              FibResult
 	}
 	rs := []route{}
@@ -64,24 +66,24 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 			rs = append(rs, rt)
 			continue
 		}
-		fib.reachable.foreach(func(p *Prefix, r FibResult) {
-			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: *p, r: r}
+		fib.reachable.foreach(func(p net.IPNet, r FibResult) {
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: p, r: r}
 			rs = append(rs, rt)
 		})
-		fib.routeFib.foreach(func(p *Prefix, r FibResult) {
-			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: *p, r: r}
+		fib.routeFib.foreach(func(p net.IPNet, r FibResult) {
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: p, r: r}
 			rs = append(rs, rt)
 		})
-		fib.glean.foreach(func(p *Prefix, r FibResult) {
-			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: *p, r: r}
+		fib.glean.foreach(func(p net.IPNet, r FibResult) {
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: p, r: r}
 			rs = append(rs, rt)
 		})
-		fib.local.foreach(func(p *Prefix, r FibResult) {
-			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: *p, r: r}
+		fib.local.foreach(func(p net.IPNet, r FibResult) {
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: p, r: r}
 			rs = append(rs, rt)
 		})
-		fib.punt.foreach(func(p *Prefix, r FibResult) {
-			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: *p, r: r}
+		fib.punt.foreach(func(p net.IPNet, r FibResult) {
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: p, r: r}
 			rs = append(rs, rt)
 		})
 	}
@@ -89,7 +91,10 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 		if cmp := int(rs[i].prefixFibIndex) - int(rs[j].prefixFibIndex); cmp != 0 {
 			return cmp < 0
 		}
-		return rs[i].prefix.LessThan(&rs[j].prefix)
+		if cmp := bytes.Compare(rs[i].prefix.IP, rs[j].prefix.IP); cmp != 0 {
+			return cmp < 0
+		}
+		return bytes.Compare(rs[i].prefix.Mask, rs[j].prefix.Mask) < 0
 	})
 	fmt.Fprintf(w, "%6s%30s%40s\n", "Table", "Destination", "Adjacency")
 	for ri := range rs {
@@ -102,7 +107,8 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 		if r.r.Installed {
 			in = "Installed"
 		}
-		header := fmt.Sprintf("%12s%25s%15v", r.prefixFibIndex.Name(&m.Main), &r.prefix, in)
+		//header := fmt.Sprintf("%12s%25s%15v", r.prefixFibIndex.Name(&m.Main), &r.prefix, in)
+		header := fmt.Sprintf("%12s%25s%15v", r.prefixFibIndex.Name(&m.Main), r.prefix.String(), in)
 		indent := fmt.Sprintf("%12s%25s%15v", "", "", "")
 		if r.r.Type == VIA {
 			for i, nh := range r.r.Nhs {

@@ -13,6 +13,7 @@ import (
 
 	"fmt"
 	"math/rand"
+	"net"
 )
 
 type pgStream struct {
@@ -37,11 +38,11 @@ func (m *pgMain) initProtocolMap() {
 func (m *pgMain) Name() string { return "ip4" }
 
 var defaultHeader = Header{
-	Protocol: ip.UDP,
-	Src:      Address{0x1, 0x2, 0x3, 0x4},
-	Dst:      Address{0x5, 0x6, 0x7, 0x8},
-	Tos:      0,
-	Ttl:      255,
+	Protocol:                     ip.UDP,
+	Src:                          net.ParseIP("1.2.3.4"),
+	Dst:                          net.ParseIP("5.6.7.8"),
+	Tos:                          0,
+	Ttl:                          255,
 	Ip_version_and_header_length: 0x45,
 	Fragment_id:                  vnet.Uint16(0x1234).FromHost(),
 	Flags_and_fragment_offset:    DontFragment.FromHost(),
@@ -114,7 +115,7 @@ func (s *pgStream) addInc(isSrc, isRandom bool, h *Header, min, max uint64) {
 }
 
 type addressIncrement struct {
-	base     Address
+	base     net.IP
 	cur      uint64
 	min      uint64
 	max      uint64
@@ -135,7 +136,8 @@ func (ai *addressIncrement) do(dst []vnet.Ref, dataOffset uint, isSrc bool) {
 			a = &h.Src
 		}
 		*a = ai.base
-		a.Add(v)
+		//a.Add(v)
+		vnet.IPAdd(a, v)
 		h.Checksum = h.ComputeChecksum()
 		ai.cur++
 		if ai.cur > ai.max {

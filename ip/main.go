@@ -6,6 +6,8 @@ package ip
 
 import (
 	"github.com/platinasystems/vnet"
+
+	"net"
 )
 
 type AddressStringer func(a *Address) string
@@ -15,10 +17,10 @@ type FamilyConfig struct {
 	Family           Family
 	RewriteNode      vnet.Noder
 	PacketType       vnet.PacketType
-	GetRoute         func(p *Prefix, si vnet.Si) (ai Adj, as []Adjacency, ok bool)
-	GetReachable     func(p *Prefix, si vnet.Si) (ai Adj, as []Adjacency, ok bool)
-	GetRouteFibIndex func(p *Prefix, fi FibIndex) (ai Adj, ok bool)
-	AddDelRoute      func(p *Prefix, fi FibIndex, newAdj Adj, isDel bool) (oldAdj Adj, err error)
+	GetRoute         func(p *net.IPNet, si vnet.Si) (ai Adj, as []Adjacency, ok bool)
+	GetReachable     func(p *net.IPNet, si vnet.Si) (ai Adj, as []Adjacency, ok bool)
+	GetRouteFibIndex func(p *net.IPNet, fi FibIndex) (ai Adj, ok bool)
+	AddDelRoute      func(p *net.IPNet, fi FibIndex, newAdj Adj, isDel bool) (oldAdj Adj, err error)
 }
 
 type Main struct {

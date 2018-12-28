@@ -9,6 +9,7 @@ import (
 	"github.com/platinasystems/vnet/ip"
 
 	"fmt"
+	"net"
 )
 
 var masks = compute_masks()
@@ -85,6 +86,13 @@ type Prefix struct {
 func (p *Prefix) SetLen(l uint) { p.Len = uint32(l) }
 func (a *Address) toPrefix() (p Prefix) {
 	p.Address = *a
+	return
+}
+func (p Prefix) ToIPNet() (ipn net.IPNet) {
+	mask := AddressMaskForLen(uint(p.Len))
+	// an empty ipn has nil for Mask and IP so use append
+	ipn.Mask = append(mask[:0:0], mask[:]...)
+	ipn.IP = append(p.Address[:0:0], p.Address[:]...)
 	return
 }
 

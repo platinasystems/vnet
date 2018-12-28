@@ -8,6 +8,7 @@ import (
 	"github.com/platinasystems/vnet"
 	"github.com/platinasystems/vnet/ip"
 
+	"net"
 	"unsafe"
 )
 
@@ -56,7 +57,7 @@ type Header struct {
 	Checksum vnet.Uint16
 
 	// Source and destination address.
-	Src, Dst Address
+	Src, Dst net.IP
 }
 
 func (a Address) AsUint32() vnet.Uint32     { return *(*vnet.Uint32)(unsafe.Pointer(&a[0])) }

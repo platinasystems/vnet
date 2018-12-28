@@ -11,9 +11,9 @@ import (
 
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/elib/cli"
-	"github.com/platinasystems/vnet/netlink"
 	"github.com/platinasystems/vnet/ip"
 	"github.com/platinasystems/vnet/ip4"
+	"github.com/platinasystems/vnet/netlink"
 )
 
 type netlink_add_del struct {
@@ -48,7 +48,7 @@ func (m *netlink_main) netlink_add_del_routes() {
 				intf := m.m.interface_by_si[nh.Si]
 				var addrs [2]netlink.Ip4Address
 				addrs[0] = netlink.Ip4Address(p.Address)
-				addrs[1] = netlink.Ip4Address(nh.Address)
+				addrs[1] = netlink.Ip4Address(ip4.NetIPToV4Address(nh.Address))
 				msg := netlink.NewRouteMessage()
 				msg.Type = netlink.RTM_NEWROUTE
 				if x.is_del {

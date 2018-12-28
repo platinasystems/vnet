@@ -9,6 +9,7 @@ import (
 	"github.com/platinasystems/vnet/internal/dbgvnet"
 
 	"fmt"
+	"net"
 )
 
 type IfAddr uint32
@@ -19,7 +20,7 @@ const IfAddrNil = ^IfAddr(0)
 
 type IfAddress struct {
 	// ip4/ip6 address and map key plus length.
-	Prefix Prefix
+	Prefix net.IPNet
 
 	// Interface which has this address.
 	Si vnet.Si
@@ -38,7 +39,7 @@ func (i IfAddr) String(m *Main) string {
 //go:generate gentemplate -d Package=ip -id ifaddress -d PoolType=ifAddressPool -d Type=IfAddress -d Data=ifAddrs github.com/platinasystems/elib/pool.tmpl
 
 type ifAddrMapKey struct {
-	a Address
+	a string // stringer of net.IP
 	i FibIndex
 }
 
@@ -58,9 +59,9 @@ func (m *Main) swIfAddDel(v *vnet.Vnet, si vnet.Si, isDel bool) (err error) {
 		ai := m.headBySwIf[si]
 		for ai != IfAddrNil {
 			a := m.GetIfAddr(ai)
-			k := makeIfAddrMapKey(a.Prefix.Address[:], m.FibIndexForSi(si))
+			k := makeIfAddrMapKey(a.Prefix.IP, m.FibIndexForSi(si))
 			delete(m.addrMap, k)
-			dbgvnet.Adj.Logf("DEBUG delete IfAddr %v %v from swIf delete\n", a.Prefix.String(m), si.Name(v))
+			dbgvnet.Adj.Logf("INFO delete IfAddr %v %v from swIf delete\n", a.Prefix.String(), si.Name(v))
 			m.ifAddressPool.PutIndex(uint(ai))
 			ai = a.next
 		}
@@ -75,13 +76,14 @@ func (*ifAddressMain) init(m *Main) {
 	m.v.RegisterSwIfAddDelHook(m.swIfAddDel)
 }
 
-func makeIfAddrMapKey(a []uint8, i FibIndex) (k ifAddrMapKey) {
-	copy(k.a[:], a)
+func makeIfAddrMapKey(a net.IP, i FibIndex) (k ifAddrMapKey) {
+	//copy(k.a[:], a)
+	k.a = a.String()
 	k.i = i
 	return
 }
 
-func (m *ifAddressMain) GetIfAddress(a []uint8, i FibIndex) (ia *IfAddress) {
+func (m *ifAddressMain) GetIfAddress(a net.IP, i FibIndex) (ia *IfAddress) {
 	k := makeIfAddrMapKey(a, i)
 	if i, ok := m.addrMap[k]; ok {
 		ia = &m.ifAddrs[i]
@@ -120,22 +122,22 @@ func (m *ifAddressMain) ForeachIfAddress(si vnet.Si, f func(ia IfAddr, i *IfAddr
 	return nil
 }
 
-func (m *Main) IfAddrForPrefix(p *Prefix, si vnet.Si) (ai IfAddr, exists bool) {
-	k := makeIfAddrMapKey(p.Address[:], m.FibIndexForSi(si))
+func (m *Main) IfAddrForPrefix(p *net.IPNet, si vnet.Si) (ai IfAddr, exists bool) {
+	k := makeIfAddrMapKey(p.IP, m.FibIndexForSi(si))
 	ai, exists = m.addrMap[k]
 	return
 }
 
-func (m *Main) AddDelInterfaceAddress(si vnet.Si, p *Prefix, isDel bool) (ai IfAddr, exists bool, err error) {
+func (m *Main) AddDelInterfaceAddress(si vnet.Si, p *net.IPNet, isDel bool) (ai IfAddr, exists bool, err error) {
 	var a *IfAddress
-	k := makeIfAddrMapKey(p.Address[:], m.FibIndexForSi(si))
+	k := makeIfAddrMapKey(p.IP, m.FibIndexForSi(si))
 	if ai, exists = m.addrMap[k]; exists {
 		a = m.GetIfAddr(ai)
 	}
 
 	if isDel {
 		if a == nil {
-			err = fmt.Errorf("%s: address %s not found", si.Name(m.v), p.String(m))
+			err = fmt.Errorf("%s: address %s not found", si.Name(m.v), p.String())
 			return
 		}
 		if a.prev != IfAddrNil {

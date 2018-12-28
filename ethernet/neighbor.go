@@ -11,6 +11,8 @@ import (
 	"github.com/platinasystems/vnet/ip"
 
 	"errors"
+	"fmt"
+	"net"
 )
 
 type ipNeighborFamily struct {
@@ -34,13 +36,13 @@ func (m *ipNeighborMain) init(v *vnet.Vnet, im4, im6 *ip.Main) {
 }
 
 type ipNeighborKey struct {
-	Ip ip.Address
+	Ip string // stringer of net.IP
 	Si vnet.Si
 }
 
 type IpNeighbor struct {
 	Ethernet Address
-	Ip       ip.Address
+	Ip       net.IP
 	Si       vnet.Si
 }
 
@@ -63,10 +65,10 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 		i  uint
 		ok bool
 	)
-	k.Si, k.Ip = n.Si, n.Ip
+	k.Si, k.Ip = n.Si, n.Ip.String()
 	if i, ok = nf.indexByAddress[k]; !ok {
 		if isDel {
-			dbgvnet.Adj.Logf("DEBUG delete unknown neighbor %v %v\n", n.Si.Name(m.v), n.Ip.String())
+			dbgvnet.Adj.Logf("INFO delete unknown neighbor %v %v\n", n.Si.Name(m.v), n.Ip.String())
 			err = ErrDelUnknownNeighbor
 			return
 		}
@@ -76,12 +78,12 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 
 	var (
 		as     []ip.Adjacency
-		prefix ip.Prefix
+		prefix net.IPNet
 	)
-	prefix.Address = n.Ip
-	prefix.Len = 32
+	prefix.IP = n.Ip
+	prefix.Mask = net.CIDRMask(32, 32)
 	if im.Family == ip.Ip6 {
-		prefix.Len = 128
+		prefix.Mask = net.CIDRMask(128, 128)
 	}
 	if ok {
 		ai, as, ok = im.GetReachable(&prefix, n.Si)
@@ -92,14 +94,14 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 	}
 	if isDel {
 		if len(as) > 0 {
-			dbgvnet.Adj.Logf("call AddDelRoute to delete %v adj %v from %v\n", prefix.Address, ai.String(), n.Si.Name(m.v))
+			dbgvnet.Adj.Logf("call AddDelRoute to delete %v adj %v from %v\n", prefix.String(), ai.String(), n.Si.Name(m.v))
 			if _, err = im.AddDelRoute(&prefix, im.FibIndexForSi(n.Si), ai, isDel); err != nil {
 				return
 			}
 
 			im.DelAdj(ai)
 		} else {
-			dbgvnet.Adj.Logf("DEBUG delete neighbor %v but did not find an adj, got ai = %v\n", prefix.Address, ai.String())
+			dbgvnet.Adj.Logf("DEBUG delete neighbor %v but did not find an adj, got ai = %v\n", prefix.String(), ai.String())
 		}
 		ai = ip.AdjNil
 		*in = ipNeighbor{}
@@ -116,7 +118,7 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 			im.CallAdjAddHooks(ai)
 		}
 
-		dbgvnet.Adj.Logf("call AddDelRoute to add %v adj %v to %v\n", prefix.Address, ai.String(), n.Si.Name(m.v))
+		dbgvnet.Adj.Logf("call AddDelRoute to add %v adj %v to %v\n", prefix.String(), ai.String(), n.Si.Name(m.v))
 		if _, err = im.AddDelRoute(&prefix, im.FibIndexForSi(n.Si), ai, isDel); err != nil {
 			return
 		}
@@ -136,12 +138,17 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 }
 
 func (m *ipNeighborMain) delKey(nf *ipNeighborFamily, k *ipNeighborKey) (err error) {
+	ip := net.ParseIP(k.Ip)
+	if ip == nil {
+		fmt.Printf("DEBUG delKey invalid key %v {%v %v}\n", k, k.Ip, k.Si.Name(m.v))
+		//panic(err)
+	}
 	n := IpNeighbor{
-		Ip: k.Ip,
+		Ip: ip,
 		Si: k.Si,
 	}
 	const isDel = true
-	dbgvnet.Adj.Logf("DEBUG delete neighbor %v %v from swIf delete\n", n.Si.Name(m.v), n.Ip.String())
+	dbgvnet.Adj.Logf("INFO delete neighbor %v %v from swIf delete\n", n.Si.Name(m.v), n.Ip.String())
 	_, err = m.AddDelIpNeighbor(nf.m, &n, isDel)
 	return
 }

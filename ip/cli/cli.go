@@ -79,7 +79,8 @@ loop:
 	}
 
 	for i := uint(0); i < x.count; i++ {
-		p := x.ip4_prefix.Add(i)
+		q := x.ip4_prefix.Add(i)
+		p := q.ToIPNet()
 
 		for i := range x.ip4_nhs {
 			//err = m4.AddDelRouteNextHop(&p, &x.ip4_nhs[i], x.is_del)
@@ -90,7 +91,6 @@ loop:
 		}
 
 		if len(x.adjs) > 0 {
-			pi := p.ToIpPrefix()
 			for i := range x.adjs {
 				var (
 					ai ip.Adj
@@ -98,9 +98,9 @@ loop:
 					ok bool
 				)
 				if x.is_del {
-					ai, ok = m4.GetRouteFibIndex(&pi, x.fib_index)
+					ai, ok = m4.GetRouteFibIndex(&p, x.fib_index)
 					if !ok {
-						err = fmt.Errorf("%v not found", pi.String(&m4.Main))
+						err = fmt.Errorf("%v not found", p.String())
 						return
 					}
 				} else {
@@ -108,7 +108,7 @@ loop:
 					as[0] = x.adjs[i]
 					m4.CallAdjAddHooks(ai)
 				}
-				if _, err = m4.AddDelRoute(&pi, x.fib_index, ai, x.is_del); err != nil {
+				if _, err = m4.AddDelRoute(&p, x.fib_index, ai, x.is_del); err != nil {
 					return
 				}
 				if x.is_del {
@@ -134,9 +134,11 @@ func (m *Main) ip_interface(c cli.Commander, w cli.Writer, in *cli.Input) (err e
 	case in.Parse("fib %v %d", &si, v, &i):
 		m4.SetFibIndexForSi(si, ip.FibIndex(i))
 	case in.Parse("a%*ddress %v %v", &si, v, &p):
-		m4.AddDelInterfaceAddress(si, &p, false)
+		q := p.ToIPNet()
+		m4.AddDelInterfaceAddress(si, &q, false)
 	case in.Parse("d%*elete %v %v", &si, v, &p):
-		m4.AddDelInterfaceAddress(si, &p, true)
+		q := p.ToIPNet()
+		m4.AddDelInterfaceAddress(si, &q, true)
 	default:
 		err = cli.ParseError
 	}
@@ -159,7 +161,10 @@ func (m *Main) Init() (err error) {
 		},
 	}
 	for i := range cmds {
-		v.CliAdd(&cmds[i])
+		// deprecating these cli; use Linux cli
+		if false {
+			v.CliAdd(&cmds[i])
+		}
 	}
 	return
 }

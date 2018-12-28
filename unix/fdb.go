@@ -337,7 +337,8 @@ func ProcessIpNeighbor(msg *xeth.MsgNeighUpdate, v *vnet.Vnet) (err error) {
 	}
 
 	kind := xeth.Kind(msg.Kind)
-	dbgfdb.Neigh.Log(kind)
+	netns := xeth.Netns(msg.Net)
+	dbgfdb.Neigh.Log(kind, "netns:", netns, "family:", msg.Family)
 	var macIsZero bool = true
 	for _, i := range msg.Lladdr {
 		if i != 0 {
@@ -348,16 +349,22 @@ func ProcessIpNeighbor(msg *xeth.MsgNeighUpdate, v *vnet.Vnet) (err error) {
 	isDel := macIsZero
 	m := GetMain(v)
 	ns := getNsByInode(m, msg.Net)
-	netns := xeth.Netns(msg.Net)
+	_, lo, _ := net.ParseCIDR("127.0.0.0/8")
+	addr := msg.CloneIP() // this makes a net.IP out of msg.Dst
 	if ns == nil {
 		dbgfdb.Ns.Log("namespace", netns, "not found")
-		dbgfdb.Neigh.Log("DEBUG", vnet.IsDel(isDel).String(), "msg:", msg, "not actioned because namespace", netns, "not found")
+		if !lo.Contains(addr) {
+			dbgfdb.Neigh.Log("INFO", vnet.IsDel(isDel).String(), "msg:", msg, "not actioned because namespace", netns, "not found")
+		}
 		return
 	}
 	si, ok := ns.siForIfIndex(uint32(msg.Ifindex))
 	if !ok {
 		//dbgfdb.Neigh.Log("no si for", msg.Ifindex, "in", ns.name)
-		dbgfdb.Neigh.Log("DEBUG", vnet.IsDel(isDel).String(), "msg", msg, "not actioned because no si for", msg.Ifindex, "in", ns.name)
+		// Ifindex 2 is eth0
+		if !lo.Contains(addr) && msg.Ifindex != 2 {
+			dbgfdb.Neigh.Log("INFO", vnet.IsDel(isDel).String(), "msg", msg, "not actioned because no si for", msg.Ifindex, "in", ns.name)
+		}
 		return
 	}
 
@@ -368,10 +375,11 @@ func ProcessIpNeighbor(msg *xeth.MsgNeighUpdate, v *vnet.Vnet) (err error) {
 		return
 	}
 
+	dbgfdb.Neigh.Logf("msg.Dst %v ip %v %v\n", msg.Dst, addr.String(), si.Name(v))
 	nbr := ethernet.IpNeighbor{
 		Si:       si,
 		Ethernet: ethernet.Address(msg.Lladdr),
-		Ip:       ip.Address(msg.Dst),
+		Ip:       addr,
 	}
 	m4 := ip4.GetMain(v)
 	em := ethernet.GetMain(v)
@@ -389,7 +397,7 @@ func ProcessIpNeighbor(msg *xeth.MsgNeighUpdate, v *vnet.Vnet) (err error) {
 // 1. Interface-address setting
 //    If local table entry and is a known interface of vnet i.e. front-panel then
 //    install an interface address
-// 2. Dummy interface setting
+// 2. Dummy or any other interface that's not a front panel or vlans of a front panel setting
 //    If not a known interface of vnet, we assume it's a dummy and install as a punt
 //    adjacency (FIXME - need to filter routes through eth0 and others)
 func ProcessZeroGw(msg *xeth.MsgFibentry, v *vnet.Vnet, ns *net_namespace, isDel, isLocal, isMainUc bool) (err error) {
@@ -398,7 +406,7 @@ func ProcessZeroGw(msg *xeth.MsgFibentry, v *vnet.Vnet, ns *net_namespace, isDel
 	si, ok := ns.siForIfIndex(uint32(xethNhs[0].Ifindex))
 	if pe != nil && !ok {
 		// found a port entry but no si for it; not expected
-		dbgfdb.Fib.Log("DEBUG found port entry but no si, pe = ", pe)
+		dbgfdb.Fib.Log("INFO found port entry but no si, pe = ", pe)
 	}
 	if pe != nil && ok {
 		// Adds (local comes first followed by main-uc):
@@ -411,7 +419,7 @@ func ProcessZeroGw(msg *xeth.MsgFibentry, v *vnet.Vnet, ns *net_namespace, isDel
 		ns := getNsByInode(m, pe.Net)
 		if ns == nil {
 			dbgfdb.Ns.Log("namespace", pe.Net, "not found")
-			dbgfdb.Fib.Log("DEBUG", vnet.IsDel(isDel).String(), "msg:", msg, "not actioned because namespace", pe.Net, "not found")
+			dbgfdb.Fib.Log("INFO", vnet.IsDel(isDel).String(), "msg:", msg, "not actioned because namespace", xeth.Netns(pe.Net), "not found")
 			return
 		}
 		dbgfdb.Ns.Log("namespace", pe.Net, "found")
@@ -419,10 +427,10 @@ func ProcessZeroGw(msg *xeth.MsgFibentry, v *vnet.Vnet, ns *net_namespace, isDel
 			m4 := ip4.GetMain(v)
 			if isLocal {
 				dbgfdb.Fib.Log(vnet.IsDel(isDel).String(), "local", msg.Prefix(), "ifindex", xethNhs[0].Ifindex, "si", si, si.Name(v), si.Kind(v), si.GetType(v))
-				m4.AddDelInterfaceAddressRoute(*msg.Prefix(), si, ip4.LOCAL, isDel)
+				m4.AddDelInterfaceAddressRoute(msg.Prefix(), si, ip4.LOCAL, isDel)
 			} else if isMainUc {
 				dbgfdb.Fib.Log(vnet.IsDel(isDel).String(), "main", msg.Prefix(), "ifindex", xethNhs[0].Ifindex, "si", si, si.Name(v), si.Kind(v), si.GetType(v))
-				m4.AddDelInterfaceAddressRoute(*msg.Prefix(), si, ip4.GLEAN, isDel)
+				m4.AddDelInterfaceAddressRoute(msg.Prefix(), si, ip4.GLEAN, isDel)
 			} else {
 				dbgfdb.Fib.Log(vnet.IsDel(isDel).String(),
 					"neither local nor main", msg.Prefix(), si.Name(v))
@@ -492,7 +500,10 @@ func ProcessFibEntry(msg *xeth.MsgFibentry, v *vnet.Vnet) (err error) {
 	ns := getNsByInode(m, msg.Net)
 	if ns == nil {
 		dbgfdb.Ns.Log("namespace", netns, "not found")
-		dbgfdb.Fib.Log("DEBUG", vnet.IsDel(isDel).String(), "msg:", msg, "not actioned because namespace", msg.Net, "not found")
+		_, lo, _ := net.ParseCIDR("127.0.0.0/8")
+		if !lo.Contains(msg.Prefix().IP) {
+			dbgfdb.Fib.Log("INFO", vnet.IsDel(isDel).String(), "msg:", msg, "not actioned because namespace", xeth.Netns(msg.Net), "not found")
+		}
 		return
 	}
 	nhs := ns.parseIP4NextHops(msg) // this gets rid of next hops that are not xeth interfaces or interfaces built on xeth
@@ -510,19 +521,16 @@ func ProcessFibEntry(msg *xeth.MsgFibentry, v *vnet.Vnet) (err error) {
 
 	// handle ipv4 only for now
 	if a4 := msg.Prefix().IP.To4(); len(a4) == net.IPv4len && len(nhs) > 0 {
-		p := ipnetToIP4Prefix(msg.Prefix())
-		m4.AddDelRouteNextHops(ns.fibIndexForNamespace(), &p, nhs, isDel, isReplace)
+		m4.AddDelRouteNextHops(ns.fibIndexForNamespace(), msg.Prefix(), nhs, isDel, isReplace)
 	}
 	return
 }
 
-func (ns *net_namespace) Ip4IfaddrMsg(m4 *ip4.Main, ipnet *net.IPNet, ifindex uint32, isDel bool) (err error) {
-	p := ipnetToIP4Prefix(ipnet)
-	dbgfdb.Ifa.Log(ipnet, "-->", p)
+func (ns *net_namespace) Ip4IfaddrMsg(m4 *ip4.Main, p *net.IPNet, ifindex uint32, isDel bool) (err error) {
 	if si, ok := ns.siForIfIndex(ifindex); ok {
 		dbgfdb.Ifa.Log(vnet.IsDel(isDel).String(), "si", si)
 		ns.validateFibIndexForSi(si)
-		err = m4.AddDelInterfaceAddress(si, &p, isDel)
+		err = m4.AddDelInterfaceAddress(si, p, isDel)
 		dbgfdb.Ifa.Log(err)
 	} else {
 		dbgfdb.Ifa.Log("no si for ifindex:", ifindex)
@@ -609,7 +617,7 @@ func ProcessInterfaceAddr(msg *xeth.MsgIfa, action vnet.ActionType, v *vnet.Vnet
 				ns.Ip4IfaddrMsg(m4, msg.IPNet(), uint32(pe.Ifindex), msg.IsDel())
 			} else {
 				dbgfdb.Ns.Log("namespace", pe.Net, "not found")
-				dbgfdb.Fib.Log("DEBUG msg:", msg, "not actioned because namespace", pe.Net, "not found")
+				dbgfdb.Fib.Log("INFO msg:", msg, "not actioned because namespace", xeth.Netns(pe.Net), "not found")
 			}
 		}
 	}
@@ -743,7 +751,7 @@ func ProcessInterfaceInfo(msg *xeth.MsgIfinfo, action vnet.ActionType, v *vnet.V
 	switch action {
 	case vnet.PreVnetd:
 		makePortEntry(msg, puntIndex)
-		dbgfdb.Ifinfo.Log("Prevnetd", kind)
+		dbgfdb.Ifinfo.Log("Prevnetd", kind, "makePortEntry", "Ifindex:", msg.Ifindex, "IfName:", ifname, "DevType:", xeth.DevType(msg.Devtype).String())
 
 	case vnet.ReadyVnetd:
 		// Walk Port map and flush into vnet/fe layers the interface info we gathered
@@ -766,7 +774,7 @@ func ProcessInterfaceInfo(msg *xeth.MsgIfinfo, action vnet.ActionType, v *vnet.V
 		ns := getNsByInode(m, msg.Net)
 		if ns == nil {
 			dbgfdb.Ns.Log("namespace", netns, "not found")
-			dbgfdb.Ifinfo.Log("DEBUG msg:", msg, "not actioned because namespace", msg.Net, "not found")
+			dbgfdb.Ifinfo.Log("INFO msg:", msg, "not actioned because namespace", xeth.Netns(msg.Net), "not found")
 			return
 		}
 		dbgfdb.Ns.Log(action, "namespace", ns.name, "found for", ifname)

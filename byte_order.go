@@ -4,6 +4,10 @@
 
 package vnet
 
+import (
+	"net"
+)
+
 // Network byte order helpers.
 type Uint8 uint8 // dummy used to satisfy MaskedStringer interface
 type Uint16 uint16
@@ -37,4 +41,14 @@ func ByteAdd(a []byte, x uint64) {
 		}
 		i--
 	}
+}
+
+func IPAdd(ip *net.IP, x uint64) {
+	var a []byte
+	addr := *ip
+	a = append(addr[:0:0], addr[:]...)
+	ByteAdd(a, x)
+	addr = append(a[:0:0], a[:]...)
+	ip = &addr
+	return
 }

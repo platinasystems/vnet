@@ -16,6 +16,7 @@ import (
 	"github.com/platinasystems/vnet/netlink"
 
 	"fmt"
+	"net"
 	"sync"
 )
 
@@ -134,13 +135,13 @@ func (i *dummy_interface) addDelDummyPuntPrefixes(m *Main, isDel bool) {
 	for addr, fi := range i.ip4Addrs {
 		m4 := ip4.GetMain(m.v)
 		p := ip4.Prefix{Address: addr, Len: 32}
-		q := p.ToIpPrefix()
+		q := p.ToIPNet()
 		m4.AddDelRoute(&q, fi, ip.AdjPunt, isDel)
 	}
 	for addr, fi := range i.ip6Addrs {
 		m6 := ip6.GetMain(m.v)
 		p := ip6.Prefix{Address: addr, Len: 128}
-		q := p.ToIpPrefix()
+		q := p.ToIPNet()
 		m6.AddDelRoute(&q, fi, ip.AdjPunt, isDel)
 	}
 }
@@ -572,11 +573,11 @@ func ethernetAddress(t netlink.Attr) (a ethernet.Address) {
 
 func (e *netlinkEvent) ip4IfaddrMsg(v *netlink.IfAddrMessage) (err error) {
 	p := ip4Prefix(v.Attrs[netlink.IFA_ADDRESS], v.Prefixlen)
+	q := p.ToIPNet()
 	m4 := ip4.GetMain(e.m.v)
 	isDel := v.Header.Type == netlink.RTM_DELADDR
 	if di, ok := e.ns.getDummyInterface(v.Index); ok {
 		fi := e.ns.fibIndexForNamespace()
-		q := p.ToIpPrefix()
 		if di.isAdminUp || isDel {
 			m4.AddDelRoute(&q, fi, ip.AdjPunt, isDel)
 		}
@@ -590,7 +591,7 @@ func (e *netlinkEvent) ip4IfaddrMsg(v *netlink.IfAddrMessage) (err error) {
 		}
 	} else if si, ok := e.ns.siForIfIndex(v.Index); ok {
 		e.ns.validateFibIndexForSi(si)
-		err = m4.AddDelInterfaceAddress(si, &p, isDel)
+		err = m4.AddDelInterfaceAddress(si, &q, isDel)
 	}
 	return
 }
@@ -628,7 +629,7 @@ func (e *netlinkEvent) ip4NeighborMsg(v *netlink.NeighborMessage) (err error) {
 	nbr := ethernet.IpNeighbor{
 		Si:       si,
 		Ethernet: ethernetAddress(v.Attrs[netlink.NDA_LLADDR]),
-		Ip:       nh.Address.ToIp(),
+		Ip:       nh.Address,
 	}
 	m4 := ip4.GetMain(e.m.v)
 	em := ethernet.GetMain(e.m.v)
@@ -723,7 +724,9 @@ func (e *netlinkEvent) ip4RouteMsg(v *netlink.RouteMessage, isLastInEvent bool) 
 		//Add to end of list
 	}
 
-	p := ip4Prefix(v.Attrs[netlink.RTA_DST], v.DstLen)
+	q := ip4Prefix(v.Attrs[netlink.RTA_DST], v.DstLen)
+	p := q.ToIPNet()
+
 	isDel := v.Header.Type == netlink.RTM_DELROUTE
 
 	nhs := e.ns.parse_ip4_next_hops(v)
@@ -765,7 +768,7 @@ func (e *netlinkEvent) ip4RouteMsg(v *netlink.RouteMessage, isLastInEvent bool) 
 	return
 }
 
-func (e *netlinkEvent) ip4_in_ip4_route(p *ip4.Prefix, as *netlink.AttrArray, intf *net_namespace_interface, isDel bool) (err error) {
+func (e *netlinkEvent) ip4_in_ip4_route(p *net.IPNet, as *netlink.AttrArray, intf *net_namespace_interface, isDel bool) (err error) {
 	switch intf.kind {
 	case netlink.InterfaceKindIp4GRE, netlink.InterfaceKindIpip:
 	default:
@@ -786,9 +789,9 @@ func (e *netlinkEvent) ip4_in_ip4_route(p *ip4.Prefix, as *netlink.AttrArray, in
 		kind := netlink.LwtunnelIp4AttrKind(k)
 		switch kind {
 		case netlink.LWTUNNEL_IP_SRC:
-			h.Src = ip4.Address(*a.(*netlink.Ip4Address))
+			h.Src = ip4.Address(*a.(*netlink.Ip4Address)).ToNetIP()
 		case netlink.LWTUNNEL_IP_DST:
-			h.Dst = ip4.Address(*a.(*netlink.Ip4Address))
+			h.Dst = ip4.Address(*a.(*netlink.Ip4Address)).ToNetIP()
 		case netlink.LWTUNNEL_IP_TTL:
 			h.Ttl = a.(netlink.Uint8Attr).Uint()
 		case netlink.LWTUNNEL_IP_TOS:
@@ -824,7 +827,7 @@ func (e *netlinkEvent) ip4_in_ip4_route(p *ip4.Prefix, as *netlink.AttrArray, in
 	return
 }
 
-func (e *netlinkEvent) ip4_in_ip6_route(p *ip4.Prefix, as *netlink.AttrArray, intf *net_namespace_interface, isDel bool) (err error) {
+func (e *netlinkEvent) ip4_in_ip6_route(p *net.IPNet, as *netlink.AttrArray, intf *net_namespace_interface, isDel bool) (err error) {
 	panic("not yet")
 	return
 }

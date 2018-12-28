@@ -9,6 +9,7 @@ import (
 	"github.com/platinasystems/vnet/ip"
 
 	"fmt"
+	"net"
 )
 
 type Neighbor struct {
@@ -44,10 +45,10 @@ func (n *Neighbor) FinalizeAdjacency(a *ip.Adjacency) {
 	h := &n.Header
 
 	// Give tunnel a src address if not specified or zero.
-	if h.Src.AsUint32() == 0 {
+	if len(h.Src) == 0 || h.Src.Equal(net.IPv4zero) || h.Src.Equal(net.IPv6zero) {
 		ifa := m.IfFirstAddress(si)
 		if ifa != nil {
-			h.Src = *IpAddress(&ifa.Prefix.Address)
+			h.Src = ifa.Prefix.IP
 		}
 	}
 
@@ -66,7 +67,7 @@ func (n *Neighbor) FinalizeAdjacency(a *ip.Adjacency) {
 	r.SetLen(l)
 }
 
-func (m *Main) AddDelRouteNeighbor(p *Prefix, n *Neighbor, fi ip.FibIndex, isDel bool) (err error) {
+func (m *Main) AddDelRouteNeighbor(p *net.IPNet, n *Neighbor, fi ip.FibIndex, isDel bool) (err error) {
 	n.m = m
 	f := m.fibByIndex(fi, true)
 	if adj, _, ok := f.GetReachable(p, n.LocalSi); ok {
