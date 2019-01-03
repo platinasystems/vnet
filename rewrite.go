@@ -37,6 +37,10 @@ type Rewrite struct {
 
 func (r *Rewrite) String(v *Vnet) (lines []string) {
 	swt := r.Si.GetType(v)
+	if r.Stag != 0 {
+		// BridgeByStag[] to get ifname would create import cycle
+		lines = append(lines, fmt.Sprintf("bridge (stag %v)", r.Stag))
+	}
 	lines = append(lines, r.Si.Name(v))
 	lines = append(lines, swt.SwInterfaceRewriteString(v, r)...)
 	return
