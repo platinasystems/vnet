@@ -51,7 +51,7 @@ type PortEntry struct {
 	Subportindex int8
 	PuntIndex    uint8 // 0-based meth#, derived from Iflinkindex
 	Devtype      uint8
-	Addr         [xeth.ETH_ALEN]uint8
+	Addr         net.HardwareAddr
 	IPNets       []*net.IPNet
 }
 
@@ -208,10 +208,6 @@ func (pe *PortEntry) DelIPNet(ipnet *net.IPNet) {
 	}
 }
 
-func (pe *PortEntry) HardwareAddr() net.HardwareAddr {
-	return net.HardwareAddr(pe.Addr[:])
-}
-
 type ActionType int
 
 const (
@@ -275,7 +271,7 @@ if vnet.SviFromVnetCh != nil {
 var SviFromFeCh chan FromFeMsg // for l2-mod learning event reporting
 
 // simplified hooks for direct calls to fe1 from vnet
-type BridgeAddDelHook_t func(si Si, stag uint16, puntIndex uint8, addr [6]byte, isAdd bool) (err error)
+type BridgeAddDelHook_t func(si Si, stag uint16, puntIndex uint8, addr net.HardwareAddr, isAdd bool) (err error)
 
 type BridgeMemberAddDelHook_t func(si Si, stag uint16, brmSi Si, pipe_port uint16, ctag uint16, isAdd bool) (err error)
 

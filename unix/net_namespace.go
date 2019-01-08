@@ -227,7 +227,7 @@ type net_namespace_interface struct {
 	name                 string
 	namespace            *net_namespace
 	ifindex              uint32
-	address              []byte
+	address              net.HardwareAddr
 	kind                 netlink.InterfaceKind
 	tunnel_metadata_mode bool
 	si                   vnet.Si
@@ -894,7 +894,7 @@ func (m *net_namespace_main) interface_by_name(name string) (ns *net_namespace, 
 				name:      name,
 				namespace: ns,
 				ifindex:   uint32(netIntf.Index),
-				address:   []byte(netIntf.HardwareAddr),
+				address:   netIntf.HardwareAddr,
 				kind:      netlink.InterfaceKindVlan,
 			}
 			if ns.interface_by_index == nil {

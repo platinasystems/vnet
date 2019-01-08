@@ -27,9 +27,25 @@ type Bridge struct {
 }
 
 func (br *Bridge) String() (dump string) {
-	dump = fmt.Sprintf("br[%v] %v stag %v, addr %x\n", vnet.SiByIfindex[br.port.Ifindex], br.port.Ifname, br.port.Stag, br.port.Addr)
-	dump += fmt.Sprintf("members: %+v\n", br.members)
-	dump += fmt.Sprintf("macToIfindex: %+v\n", br.macToIfindex)
+	dump = fmt.Sprintf("%v, si %v, stag %v, addr %v\n", br.port.Ifname, vnet.SiByIfindex[br.port.Ifindex], br.port.Stag, br.port.Addr)
+	dump += fmt.Sprintf("members:\n")
+	for portvid, brm := range br.members {
+		be := vnet.PortsByIndex[brm.Ifindex]
+		if be != nil {
+			dump += fmt.Sprintf(" %-12v", be.Ifname)
+		}
+		dump += fmt.Sprintf(" portvid:%v->ifindex:%v,ctag:%v", portvid, brm.Ifindex, brm.Ctag)
+		dump += fmt.Sprintf("\n")
+	}
+	dump += fmt.Sprintf("macToIfindex:\n")
+	for addr, ifindex := range br.macToIfindex {
+		dump += fmt.Sprintf(" %v->%v", addr.String(), ifindex)
+		be := vnet.PortsByIndex[ifindex]
+		if be != nil {
+			dump += fmt.Sprintf(" %v", be.Ifname)
+		}
+		dump += fmt.Sprintf("\n")
+	}
 	return
 }
 
@@ -225,7 +241,7 @@ func goSviFromFe() {
 			if br != nil {
 				// add entry to fdb so we can lookup L3 interface by bridge/mac
 				br.macToIfindex[msg.Addr] = bridx.member
-				dbgvnet.Bridge.Logf("br fdb add bridge stag %v, mac %+v -> brm ifindex %v",
+				dbgvnet.Bridge.Logf("br fdb add bridge stag %v, mac %v -> brm ifindex %v",
 					msg.Stag,
 					msg.Addr,
 					bridx.member)

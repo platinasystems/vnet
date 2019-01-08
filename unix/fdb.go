@@ -33,7 +33,7 @@ import (
 var (
 	// Function flags
 	FdbOn       bool = true
-	AllowBridge bool = false
+	AllowBridge bool = true
 )
 
 const MAXMSGSPEREVENT = 1000
@@ -771,7 +771,7 @@ func makePortEntry(msg *xeth.MsgIfinfo, puntIndex uint8) (pe *vnet.PortEntry) {
 	pe.Iflinkindex = msg.Iflinkindex
 	vnet.SetPortByIndex(msg.Ifindex, pe.Ifname)
 	pe.Iff = net.Flags(msg.Flags)
-	copy(pe.Addr[:], msg.Addr[:])
+	pe.Addr = msg.Addr[:]
 	pe.PuntIndex = puntIndex
 
 	return
@@ -890,7 +890,7 @@ func ProcessInterfaceInfo(msg *xeth.MsgIfinfo, action vnet.ActionType, v *vnet.V
 						vnet.SetPortByIndex(msg.Ifindex, pe.Ifname)
 						pe.Iff = net.Flags(msg.Flags)
 						pe.PortVid = msg.Id
-						copy(pe.Addr[:], msg.Addr[:])
+						pe.Addr = msg.Addr[:]
 						pe.Portindex = msg.Portindex
 						pe.Subportindex = msg.Subportindex
 						pe.PuntIndex = puntIndex
@@ -1142,7 +1142,7 @@ func (m *FdbMain) fdbPortShow(c cli.Commander, w cli.Writer, in *cli.Input) (err
 
 func (m *FdbMain) fdbBridgeShow(c cli.Commander, w cli.Writer, in *cli.Input) (err error) {
 	for stag, br := range ethernet.BridgeByStag {
-		fmt.Fprintf(w, "stag:%v, br %s\n", stag, br)
+		fmt.Fprintf(w, "stag:%v, %s\n", stag, br)
 	}
 	return
 }
