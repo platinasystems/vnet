@@ -225,6 +225,15 @@ func SetBridge(stag uint16, ifname string) *vnet.PortEntry {
 	return pe
 }
 
+func UnsetBridge(stag uint16) {
+	br := BridgeByStag[stag]
+	if br != nil {
+		dbgvnet.Bridge.Logf("delete bridge %v, stag %v", br.port.Ifname, br.port.Stag)
+		delete(BridgeByStag, br.port.Stag)
+		vnet.UnsetPort(br.port.Ifname)
+	}
+}
+
 func goSviFromFe() {
 	var brm fdbBridgeMember
 	var bridx fdbBridgeIndex

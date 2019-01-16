@@ -727,9 +727,6 @@ func getNsByInode(m *Main, netNum uint64) *net_namespace {
 func makePortEntry(msg *xeth.MsgIfinfo, puntIndex uint8) (pe *vnet.PortEntry) {
 	ifname := xeth.Ifname(msg.Ifname)
 
-	dbgfdb.XethMsg.Logf("make(%v,%v) %v ifindex %v iflinkindex %v",
-		msg.Devtype, xeth.DevType(msg.Devtype).String(), ifname.String(), msg.Ifindex, msg.Iflinkindex)
-
 	switch msg.Devtype {
 	case xeth.XETH_DEVTYPE_XETH_PORT:
 		pe = vnet.SetPort(ifname.String())
@@ -773,6 +770,10 @@ func makePortEntry(msg *xeth.MsgIfinfo, puntIndex uint8) (pe *vnet.PortEntry) {
 	pe.Iff = net.Flags(msg.Flags)
 	pe.Addr = msg.Addr[:]
 	pe.PuntIndex = puntIndex
+
+	dbgfdb.XethMsg.Logf("make(%v,%v) %v ifindex %v, iflinkindex %v, mac %v",
+		msg.Devtype, xeth.DevType(msg.Devtype).String(), ifname.String(),
+		msg.Ifindex, msg.Iflinkindex, pe.Addr)
 
 	return
 }
@@ -859,6 +860,11 @@ func ProcessInterfaceInfo(msg *xeth.MsgIfinfo, action vnet.ActionType, v *vnet.V
 				uint32(msg.Ifindex), msg.Addr, msg.Devtype,
 				msg.Iflinkindex, msg.Id)
 			if reason == xeth.XETH_IFINFO_REASON_UNREG {
+				if msg.Devtype == xeth.XETH_DEVTYPE_LINUX_BRIDGE {
+					ethernet.UnsetBridge(pe.Stag)
+				} else if msg.Devtype == xeth.XETH_DEVTYPE_LINUX_VLAN_BRIDGE_PORT {
+					vnet.UnsetPort(ifname) // clear stag
+				}
 				return
 			}
 		}
@@ -1131,10 +1137,24 @@ type fdbBridgeIndex struct {
 var fdbBrmToIndex = map[fdbBridgeMember]fdbBridgeIndex{}
 
 func (m *FdbMain) fdbPortShow(c cli.Commander, w cli.Writer, in *cli.Input) (err error) {
-	for _, e := range vnet.Ports {
-		fmt.Fprintf(w, "si:%v %+v\n", vnet.SiByIfindex[e.Ifindex], e)
+	show_bridge := false
+
+	for !in.End() {
+		switch {
+		case in.Parse("l%*inux"):
+			show_bridge = true
+		default:
+			err = cli.ParseError
+			return
+		}
 	}
-	fmt.Fprintf(w, "name %v, index %v, si %v\n",
+
+	for _, e := range vnet.Ports {
+		if !show_bridge || e.Devtype >= xeth.XETH_DEVTYPE_LINUX_UNKNOWN {
+			fmt.Fprintf(w, "si:%v %+v\n", vnet.SiByIfindex[e.Ifindex], e)
+		}
+	}
+	fmt.Fprintf(w, "\nmap lengths: name %v, index %v, si %v\n",
 		len(vnet.Ports), len(vnet.PortsByIndex), len(vnet.SiByIfindex))
 
 	return
@@ -1142,7 +1162,7 @@ func (m *FdbMain) fdbPortShow(c cli.Commander, w cli.Writer, in *cli.Input) (err
 
 func (m *FdbMain) fdbBridgeShow(c cli.Commander, w cli.Writer, in *cli.Input) (err error) {
 	for stag, br := range ethernet.BridgeByStag {
-		fmt.Fprintf(w, "stag:%v, %s\n", stag, br)
+		fmt.Fprintf(w, "BridgeByStag[%v] %s\n", stag, br)
 	}
 	return
 }

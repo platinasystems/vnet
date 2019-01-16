@@ -12,6 +12,7 @@ import (
 	"github.com/platinasystems/elib/dep"
 	"github.com/platinasystems/elib/loop"
 	"github.com/platinasystems/elib/parse"
+	"github.com/platinasystems/vnet/internal/dbgvnet"
 	"github.com/platinasystems/xeth"
 )
 
@@ -55,9 +56,9 @@ type PortEntry struct {
 	IPNets       []*net.IPNet
 }
 
-var Ports map[string]*PortEntry
+var Ports map[string]*PortEntry       // FIXME ifname of bridge need not be unique across netns
 var PortsByIndex map[int32]*PortEntry // FIXME - driver only sends platina-mk1 type
-var SiByIfindex map[int32]Si
+var SiByIfindex map[int32]Si          // FIXME ifindex is not unique across netns, also impacts PortsByIndex[]
 
 type BridgeNotifierFn func()
 
@@ -96,6 +97,18 @@ func GetPortByIndex(ifindex int32) (entry *PortEntry) {
 	}
 	entry, _ = PortsByIndex[ifindex]
 	return entry
+}
+
+func UnsetPort(ifname string) {
+	dbgvnet.Bridge.Log(ifname)
+
+	entry, found := Ports[ifname]
+	if found {
+		dbgvnet.Bridge.Logf("delete port %v, ifindex %v", ifname, entry.Ifindex)
+		delete(SiByIfindex, entry.Ifindex)
+		delete(PortsByIndex, entry.Ifindex)
+		delete(Ports, ifname)
+	}
 }
 
 func GetNumSubports(ifname string) (numSubports uint) {
