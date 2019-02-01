@@ -52,7 +52,7 @@ type PortEntry struct {
 	Subportindex int8
 	PuntIndex    uint8 // 0-based meth#, derived from Iflinkindex
 	Devtype      uint8
-	Addr         net.HardwareAddr
+	StationAddr  net.HardwareAddr
 	IPNets       []*net.IPNet
 }
 
@@ -77,6 +77,7 @@ func SetPort(ifname string) *PortEntry {
 	entry, found := Ports[ifname]
 	if !found {
 		entry = new(PortEntry)
+		entry.StationAddr = make(net.HardwareAddr, 6)
 		Ports[ifname] = entry
 	}
 	entry.Ifname = ifname
@@ -104,10 +105,14 @@ func UnsetPort(ifname string) {
 
 	entry, found := Ports[ifname]
 	if found {
-		dbgvnet.Bridge.Logf("delete port %v, ifindex %v", ifname, entry.Ifindex)
+		dbgvnet.Bridge.Logf("delete port %v ctag:%v stag:%v, ifindex %v",
+			ifname, entry.Ctag, entry.Stag, entry.Ifindex)
 		delete(SiByIfindex, entry.Ifindex)
 		delete(PortsByIndex, entry.Ifindex)
 		delete(Ports, ifname)
+		dbgvnet.Bridge.Logf("%+v", entry)
+	} else {
+		dbgvnet.Bridge.Logf("delete port %v, not found", ifname)
 	}
 }
 
@@ -257,40 +262,21 @@ type FromFeMsg struct {
 	PipePort uint16
 }
 
-/* removed to avoid concurrent pci
-var SviFromVnetCh chan FromVnetMsg
-
-type FromVnetMsg struct {
-	MsgId     uint8
-	PuntIndex uint8
-	Stag      uint16
-	PortVid   uint16
-	PipePort  uint16
-	Ctag      uint16
-	Addr      [6]uint8
-}
-
-if vnet.SviFromVnetCh != nil {
-	feCfg := vnet.FromVnetMsg{
-		MsgId:    vnet.MSG_SVI_BRIDGE_MEMBER_DELETE,
-		Stag:     brPort.Stag,
-		PipePort: PipePortByPortVid[brPort.PortVid],
-		Ctag:     brPort.Ctag}
-	dbgvnet.Adj.Log("FromVnet", feCfg)
-	vnet.SviFromVnetCh <- feCfg
-}
-*/
-
 var SviFromFeCh chan FromFeMsg // for l2-mod learning event reporting
 
 // simplified hooks for direct calls to fe1 from vnet
-type BridgeAddDelHook_t func(si Si, stag uint16, puntIndex uint8, addr net.HardwareAddr, isAdd bool) (err error)
+type BridgeAddDelHook_t func(brsi Si, stag uint16, puntIndex uint8, addr net.HardwareAddr, isAdd bool) (err error)
 
-type BridgeMemberAddDelHook_t func(si Si, stag uint16, brmSi Si, pipe_port uint16, ctag uint16, isAdd bool) (err error)
+type BridgeMemberAddDelHook_t func(stag uint16, brmSi Si, pipe_port uint16, ctag uint16, isAdd bool, nBrm uint8) (err error)
+
+type BridgeMemberLookup_t func(stag uint16, addr net.HardwareAddr) (pipe_port uint16, err error)
 
 func (v *Vnet) RegisterBridgeAddDelHook(h BridgeAddDelHook_t) {
 	v.BridgeAddDelHook = h
 }
 func (v *Vnet) RegisterBridgeMemberAddDelHook(h BridgeMemberAddDelHook_t) {
 	v.BridgeMemberAddDelHook = h
+}
+func (v *Vnet) RegisterBridgeMemberLookup(h BridgeMemberLookup_t) {
+	v.BridgeMemberLookup = h
 }

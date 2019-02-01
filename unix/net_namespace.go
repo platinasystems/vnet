@@ -600,7 +600,7 @@ func (ns *net_namespace) add_del_interface(m *Main, msg *netlink.IfInfoMessage) 
 			// fixme address change
 		}
 
-		intf.address = make([]byte, len(address))
+		intf.address = make(net.HardwareAddr, len(address))
 		copy(intf.address[:], address[:])
 		if name_changed {
 			delete(ns.interface_by_name, name)
@@ -649,7 +649,7 @@ func (ns *net_namespace) add_del_interface(m *Main, msg *netlink.IfInfoMessage) 
 	return
 }
 
-func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, ifindex uint32, address [6]byte, devtype uint8, iflinkindex int32, vlanid uint16) (err error) {
+func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, ifindex uint32, address net.HardwareAddr, devtype uint8, iflinkindex int32, vlanid uint16) (err error) {
 	dbgvnet.Adj.Logf("ns %v %v ifname %v ifindex %v address %v devtype %v iflinkindex %v vlanid %v",
 		ns.name, vnet.IsDel(isDel), ifname, ifindex, address, devtype, iflinkindex, vlanid)
 
@@ -674,12 +674,11 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 			dbgvnet.Adj.Logf("%v exists", ifname)
 			name_changed = intf.name != ifname
 		}
-		addr := address[:]
-		if exists && !bytes.Equal(intf.address, addr) {
+		if exists && !bytes.Equal(intf.address, address) {
 			dbgvnet.Adj.Log("addr change") // FIXME cleanup
 		}
 
-		intf.address = make([]byte, len(address))
+		intf.address = make(net.HardwareAddr, len(address))
 		copy(intf.address[:], address[:])
 		if name_changed {
 			delete(ns.interface_by_name, ifname)
@@ -688,8 +687,7 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 		}
 
 		// Ethernet address uniquely identifies register hw interfaces.
-		addr1 := address[:]
-		if h, ok := m.registered_hwifer_by_address[string(addr1)]; ok {
+		if h, ok := m.registered_hwifer_by_address[string(address)]; ok {
 			// only do this for hw ports
 			if ifname == h.GetHwIf().Name() {
 				m.set_si(intf, h.GetHwIf().Si())
@@ -716,13 +714,15 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 			si := ns.m.m.v.NewSwIf(vnet.SwBridgeInterface, vnet.IfId(ifindex), intf.name)
 			m.set_si(intf, si)
 			si.SetId(m.v, vnet.IfId(vlanid))
-			dbgfdb.Ifinfo.Log("addDelMk1Interface: Add xeth.XETH_DEVTYPE_LINUX_BRIDGE",
-				ifname, vlanid, ifindex, si, intf)
 
 			ethernet.StartFromFeReceivers()
 			br := vnet.PortsByIndex[int32(ifindex)]
 			if br != nil {
-				m.v.BridgeAddDelHook(si, br.Stag, br.PuntIndex, br.Addr, true)
+				dbgfdb.Ifinfo.Log("Add br",
+					ifname, vlanid, ifindex, si, br.Stag, br.StationAddr)
+				m.v.BridgeAddDelHook(si, br.Stag, br.PuntIndex, br.StationAddr, true)
+			} else {
+				dbgfdb.Ifinfo.Log("br already exists", ifindex)
 			}
 		}
 	} else {
@@ -737,15 +737,17 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 				m.addDelVlan(intf, iflinkindex, vlanid, isDel)
 			}
 			if devtype == xeth.XETH_DEVTYPE_LINUX_BRIDGE {
-				dbgfdb.Ifinfo.Log("addDelMk1Interface: Del xeth.XETH_DEVTYPE_LINUX_BRIDGE", ifname, vlanid)
 				ns.m.m.v.DelSwIf(intf.si)
 
 				br := vnet.PortsByIndex[int32(ifindex)]
 				if br != nil {
-					m.v.BridgeAddDelHook(intf.si, br.Stag, br.PuntIndex, br.Addr, false)
+					dbgfdb.Ifinfo.Log("Del br",
+						ifname, vlanid, ifindex, intf.si, br.Stag, br.StationAddr)
+					m.v.BridgeAddDelHook(intf.si, br.Stag, br.PuntIndex, br.StationAddr, false)
+				} else {
+					dbgfdb.Ifinfo.Log("br not found", ifindex)
 				}
 			}
-
 			ns.si_by_ifindex.unset(ifindex)
 			delete(m.interface_by_si, intf.si)
 		}

@@ -60,7 +60,7 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 	var rwSi vnet.Si
 	var isBridge bool
 	var ctag, stag uint16
-	var br *Bridge
+	var br *bridgeEntry
 
 	ai = ip.AdjNil
 	nf := &m.ipNeighborFamilies[im.Family]
@@ -74,7 +74,7 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 
 		// rewrite si port is bridge member
 		// si passed to fe1/fib install_adj() via rewrite is the bridge member to reach DA
-		rwSi, ctag = br.LookupSiCtag(n.Ethernet)
+		rwSi, ctag = br.LookupSiCtag(n.Ethernet, m.v)
 		if rwSi == vnet.SiNil {
 			dbgvnet.Adj.Logf("DA %v unresolved for br %v", n.Ethernet, br.port.Stag)
 			// if unknown, enqueue for later  FIXME
