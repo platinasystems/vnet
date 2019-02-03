@@ -99,7 +99,9 @@ func Provision(i int) int {
 // set 0 vs 1-base port numbering based on HW version
 // use xethPORT-SUBPORT instead of xethPORT if provision[PORT] > 0
 func IfnameOf(port, subport int) string {
-	if Provision(port) == 0 {
+	numSubport := Provision(port)
+	// both 0 or 1 means entire QSFP is a single port
+	if numSubport == 0 || numSubport == 1 {
 		return fmt.Sprint("xeth", port+PortBase())
 	}
 	return fmt.Sprint("xeth", port+PortBase(), "-", subport+PortBase())
@@ -404,7 +406,9 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 		v := newValues&(1<<i) != 0
 		q := &mod.q
 
-		q.SetSignal(signal, v)
+		if _, err := q.SetSignal(signal, v); err != nil {
+			fmt.Printf("xeth%v.qsfp error %v\n", int(port)+PortBase(), err)
+		}
 		if signal == sfp.QsfpModuleIsPresent {
 			f := "xeth" + strconv.Itoa(int(port)+PortBase()) + ".qsfp.installed"
 			s := strconv.FormatBool(v)
@@ -422,7 +426,7 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 					_, err := redis.Hget(redis.DefaultHash, "vnet."+ifname+".speed")
 					for err != nil {
 						if time.Since(start) >= 2*time.Second {
-							log.Print("hget timeout <%v>: %v", ifname, err)
+							log.Printf("qsfp check vnet ready: hget timeout <%v>: %v", ifname, err)
 							break
 						}
 						_, err = redis.Hget(redis.DefaultHash, "vnet."+ifname+".speed")
