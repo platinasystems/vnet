@@ -17,6 +17,8 @@ github.com/platinasystems/log v1.1.0 h1:hjWJskNV5QC36B+fz9rIyZjMztXZeRnOCypoSALl
 github.com/platinasystems/log v1.1.0/go.mod h1:5Wjp9vxMfkZGWz2Ep3ghzsfarcs9MMfiE2RzKwseyKQ=
 github.com/platinasystems/redis v1.1.0 h1:LjQDzR4Y3oZ21a2k+JQjhw2SpdYXwhbJa80JjkLvzJc=
 github.com/platinasystems/redis v1.1.0/go.mod h1:lyuhkHpfn6y21/nMn7H6pbBuPk1D8pflwsatn4OIl8M=
+github.com/platinasystems/redis v1.2.0 h1:Pyoc4Jkl/CfQn44XxpBB4ND4ciU4T9cSfp3xmCaJG+A=
+github.com/platinasystems/redis v1.2.0/go.mod h1:lyuhkHpfn6y21/nMn7H6pbBuPk1D8pflwsatn4OIl8M=
 github.com/platinasystems/xeth v1.1.0 h1:xTGBrXepuXM+N0sb4lqY1fIkfu17fnPo4Hr53gnnPDQ=
 github.com/platinasystems/xeth v1.1.0/go.mod h1:MokUskjwMrKdnZ08SVlEh9dkQreCHtPPEMFA81kdahI=
 github.com/platinasystems/xeth v1.1.1 h1:zfN6+gAuZXjJev9JkZ8layQOR/mT3bchD962Vtfs9uI=

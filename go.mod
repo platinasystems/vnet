@@ -8,7 +8,7 @@ require (
 	github.com/platinasystems/i2c v1.1.0
 	github.com/platinasystems/indent v1.1.0
 	github.com/platinasystems/log v1.1.0
-	github.com/platinasystems/redis v1.1.0
+	github.com/platinasystems/redis v1.2.0
 	github.com/platinasystems/xeth v1.1.1
 	gopkg.in/yaml.v2 v2.2.1
 )
