@@ -177,7 +177,6 @@ func (m *QsfpModule) Present(is bool) (err error) {
 		status := r.status.get(m)
 		for status&(1<<0) != 0 || (status == 0) {
 			if time.Since(start) >= 100*time.Millisecond {
-				//log.Print("qsfp status ready timeout")
 				err = fmt.Errorf("qsfp status ready timeout")
 				return
 			}
