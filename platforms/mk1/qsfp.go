@@ -121,6 +121,30 @@ func i2cMuxSelectPort(port uint) {
 	})
 }
 
+func i2cCloseMux() (err error) {
+        err = i2c.Do(0, mux1_addr,
+                func(bus *i2c.Bus) (err error) {
+                        var d i2c.SMBusData
+                        d[0] = 0x00
+                        err = bus.Write(0, i2c.ByteData, &d)
+                        return
+                })
+        if err != nil {
+                return err
+        }
+        err = i2c.Do(0, mux0_addr,
+                func(bus *i2c.Bus) (err error) {
+                        var d i2c.SMBusData
+                        d[0] = 0x00
+                        err = bus.Write(0, i2c.ByteData, &d)
+                        return
+                })
+        if err != nil {
+                return err
+        }
+        return nil
+}
+
 func readWriteQsfp(addr uint8, b []byte, isWrite bool) (err error) {
 	i, n_left := 0, len(b)
 
@@ -207,6 +231,16 @@ func readSignals(j uint) (v [2]uint32, err error) {
 				return
 			})
 	}
+	// close the mux
+        err = i2c.Do(0, mux0_addr, func(bus *i2c.Bus) (err error) {
+                var d i2c.SMBusData
+                d[0] = 0x00
+                err = bus.Write(0, i2c.ByteData, &d)
+                return
+        })
+        if err != nil {
+                return
+        }
 	return
 }
 
@@ -537,8 +571,9 @@ func (m *qsfpMain) signalChange(signal sfp.QsfpSignal, changedPorts, newValues u
 						continue
 					}
 				}
+
 				// if qsfp is an optic publish static monitoring thresholds
-				if !strings.Contains(q.Ident.Compliance, "CR") && q.Ident.Compliance != "" {
+				if !strings.Contains(q.Ident.Compliance, "CR") && (q.Ident.Compliance != "") && (q.Ident.Id != "SFP/SFP+/SFP28"){
 					// enable laser
 					q.TxEnable(0xf, 0xf)
 
@@ -781,7 +816,7 @@ func (m *qsfpMain) poll() {
 				q := &mod.q
 				// if qsfp is present and is optic poll monitoring fields
 				if q.AllEepromValid {
-					if !strings.Contains(q.Ident.Compliance, "CR") && q.Ident.Compliance != "" {
+					if !strings.Contains(q.Ident.Compliance, "CR") && (q.Ident.Compliance != "") && (q.Ident.Id != "SFP/SFP+/SFP28"){
 						q.Monitoring()
 						for _, k := range sfp.DynamicMonitoringRedisFields {
 							f := "xeth" + strconv.Itoa(int(port)+PortBase()) + "." + k
@@ -993,6 +1028,7 @@ func (q *qsfpModule) SfpReadWrite(offset uint, p []uint8, isWrite bool) (write_o
 			panic(err)
 		}
 	}
+	i2cCloseMux()
 	return
 }
 
