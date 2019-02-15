@@ -6,7 +6,6 @@ package sfp
 
 import (
 	"github.com/platinasystems/elib/hw"
-	"github.com/platinasystems/log"
 
 	"fmt"
 	"strconv"
@@ -145,16 +144,16 @@ const (
 	TxBiasCurrentToAmps  = 2e-3
 )
 
-func (m *QsfpModule) SetSignal(s QsfpSignal, new bool) (old bool) {
+func (m *QsfpModule) SetSignal(s QsfpSignal, new bool) (old bool, err error) {
 	old = m.signalValues[s]
 	m.signalValues[s] = new
 	if old != new {
 		switch s {
 		case QsfpModuleIsPresent:
-			m.Present(new)
+			err = m.Present(new)
 		case QsfpInterruptStatus:
 			if new {
-				m.Interrupt()
+				err = m.Interrupt()
 			}
 		}
 	}
@@ -164,10 +163,11 @@ func (m *QsfpModule) GetSignal(s QsfpSignal) bool { return m.signalValues[s] }
 
 func (m *QsfpModule) Init(a Access) { m.a = a }
 
-func (m *QsfpModule) Interrupt() {
+func (m *QsfpModule) Interrupt() (err error) {
+	return
 }
 
-func (m *QsfpModule) Present(is bool) {
+func (m *QsfpModule) Present(is bool) (err error) {
 	r := getQsfpRegs()
 	if !is {
 		m.invalidateCache()
@@ -177,8 +177,8 @@ func (m *QsfpModule) Present(is bool) {
 		status := r.status.get(m)
 		for status&(1<<0) != 0 || (status == 0) {
 			if time.Since(start) >= 100*time.Millisecond {
-				log.Print("qsfp status ready timeout")
-				break
+				err = fmt.Errorf("qsfp status ready timeout")
+				return
 			}
 			status = r.status.get(m)
 		}
@@ -196,6 +196,7 @@ func (m *QsfpModule) Present(is bool) {
 			m.Ident.Compliance = fmt.Sprintf("%v", c)
 		}
 	}
+	return
 }
 
 func (m *QsfpModule) Monitoring() {
