@@ -9,6 +9,8 @@ github.com/platinasystems/dbg v1.1.0 h1:W2ZNmbA7q68H82xCsMc2iy+BOHpqolKgRUlQL4Ia
 github.com/platinasystems/dbg v1.1.0/go.mod h1:sWVDySjmyMRdh9RgbbJORw6A+xIBdAmoqOXBarhswZY=
 github.com/platinasystems/elib v1.1.0 h1:r8z1a/Wi9SlTBo9lRWSbl9yV1n0YJ011godG7cbNNJI=
 github.com/platinasystems/elib v1.1.0/go.mod h1:XZy8etdf41RtMxmxEYArLL7T6QEJ5MPAIeHDqXtPCUU=
+github.com/platinasystems/elib v1.3.0 h1:zzANIxddy26CZ9QCQdgnTj55jKBba7slQFJDLaa8sV8=
+github.com/platinasystems/elib v1.3.0/go.mod h1:XZy8etdf41RtMxmxEYArLL7T6QEJ5MPAIeHDqXtPCUU=
 github.com/platinasystems/i2c v1.1.0 h1:34ewZSwxMvtD5kYjJAhNtwmEsCFjiQt+o6OJ62Ni2ug=
 github.com/platinasystems/i2c v1.1.0/go.mod h1:Yj5hRxt+HXbW1rXv9aTtxUNZsegDjeWerUPY5BIjDVM=
 github.com/platinasystems/indent v1.1.0 h1:VmMAqlCw1MlWgQcygXqkLsyE0Q8atBCBX+zwWVPM8Fw=
