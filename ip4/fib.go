@@ -1488,8 +1488,8 @@ func (m *Main) swIfAddDel(v *vnet.Vnet, si vnet.Si, isUp bool) (err error) {
 		return
 	}
 	f := m.fibBySi(si)
-	dbgvnet.Adj.Logf("clean up %v %v\n",
-		f.index.Name(&m.Main), si.Name(v))
+	dbgvnet.Adj.Logf("clean up %v %v %v up=%v",
+		f.index.Name(&m.Main), si, si.Name(v), isUp)
 	mp := &f.glean
 	mp_string := "glean"
 	for _, local := range [2]bool{false, true} {

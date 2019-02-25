@@ -104,12 +104,42 @@ func (m *Main) showIpNeighbor(c cli.Commander, w cli.Writer, in *cli.Input) (err
 	return
 }
 
+func (m *Main) fdbBridgeShow(c cli.Commander, w cli.Writer, in *cli.Input) (err error) {
+	var brmPerPort map[int32]uint32
+
+	brmPerPort = make(map[int32]uint32)
+
+	for stag, br := range bridgeByStag {
+		fmt.Fprintf(w, "bridgeByStag[%v] %s\n", stag, br)
+	}
+	fmt.Fprintf(w, "fdbBrmToBri\n")
+	for brm, bri := range fdbBrmToBri {
+		if count, ok := brmPerPort[bri.port]; ok {
+			brmPerPort[bri.port] = count + 1
+		} else {
+			brmPerPort[bri.port] = 1
+		}
+		fmt.Fprintf(w, "%+v %+v\n", brm, bri)
+	}
+	fmt.Fprintf(w, "brmPerPort\n")
+	for port, count := range brmPerPort {
+		fmt.Fprintf(w, "port %v, count %v\n", port, count)
+	}
+
+	return
+}
+
 func (m *Main) cliInit(v *vnet.Vnet) {
 	cmds := [...]cli.Command{
 		cli.Command{
 			Name:      "show neighbor",
 			ShortHelp: "show neighbors",
 			Action:    m.showIpNeighbor,
+		},
+		cli.Command{
+			Name:      "show bridge",
+			ShortHelp: "help",
+			Action:    m.fdbBridgeShow,
 		},
 	}
 	for i := range cmds {

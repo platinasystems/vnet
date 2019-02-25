@@ -332,7 +332,7 @@ type rwHeader struct {
 	vlan [2]VlanHeader
 }
 
-func (br *Bridge) SetRewrite(v *vnet.Vnet, rw *vnet.Rewrite, packetType vnet.PacketType, da []byte, ctag uint16) {
+func (br *bridgeEntry) SetRewrite(v *vnet.Vnet, rw *vnet.Rewrite, packetType vnet.PacketType, da []byte, ctag uint16) {
 	var h rwHeader
 
 	t := rewriteTypeMap[packetType].FromHost()
@@ -348,7 +348,7 @@ func (br *Bridge) SetRewrite(v *vnet.Vnet, rw *vnet.Rewrite, packetType vnet.Pac
 	} else {
 		h.Dst = BroadcastAddr
 	}
-	copy(h.Src[:], br.port.Addr[:])
+	copy(h.Src[:], br.port.StationAddr[:])
 	dbgvnet.Bridge.Logf("br rewrite hdr=%+v", h)
 	rw.ResetData()
 	rw.AddData(unsafe.Pointer(&h), size)

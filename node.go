@@ -281,6 +281,7 @@ type Vnet struct {
 	packageMain
 	BridgeAddDelHook       BridgeAddDelHook_t
 	BridgeMemberAddDelHook BridgeMemberAddDelHook_t
+	BridgeMemberLookup     BridgeMemberLookup_t
 }
 
 func (v *Vnet) GetLoop() *loop.Loop { return &v.loop }
