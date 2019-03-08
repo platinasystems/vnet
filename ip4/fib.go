@@ -452,6 +452,24 @@ func (m *MapFib) uninstall_all(f *Fib, ma *Main) {
 	}
 }
 
+// fib local has adjacency in its nh that are not automatically deleted by delFib
+func (m *MapFib) uninstall_local_all(f *Fib, ma *Main) {
+	for i := range m {
+		for rsi, _ := range m[i] {
+			for ri, _ := range m[i][rsi] {
+				//uninstall from fib table
+				r := &m[i][rsi][ri]
+				oldAdj := r.Adj
+				f.delFib(ma, r)
+				if !ma.IsAdjFree(oldAdj) {
+					ma.DelAdj(oldAdj)
+				}
+				dbgvnet.Adj.Logf("unset %v local %v done\n", f.index.Name(&ma.Main), r.Prefix.String())
+			}
+		}
+	}
+}
+
 type Fib struct {
 	index ip.FibIndex
 
@@ -1433,7 +1451,7 @@ func (m *Main) AddDelInterfaceAddress(si vnet.Si, addr *net.IPNet, isDel bool) (
 	// Fib remove messages should have came from Linux and fdb before InterfaceAddress remove
 	// Check and flag just in case, as Local/Glean adjacencies contains index to IfAddress so
 	// could be a problem is IfAddress is freed, but index is still used
-	if isDel {
+	if isDel && dbgvnet.Adj > 0 {
 		ia, exists = m.Main.IfAddrForPrefix(addr, si)
 		f := m.fibBySi(si)
 		if adj, _, found := f.GetLocal(addr, si); found {
@@ -1564,7 +1582,7 @@ func (m *Main) FibReset(fi ip.FibIndex) {
 	dbgvnet.Adj.Logf("uninstall_all %v via routes\n", fi.Name(&m.Main))
 	f.routeFib.uninstall_all(f, m)
 	dbgvnet.Adj.Logf("uninstall_all %v local\n", fi.Name(&m.Main))
-	f.local.uninstall_all(f, m)
+	f.local.uninstall_local_all(f, m)
 	dbgvnet.Adj.Logf("uninstall_all %v glean\n", fi.Name(&m.Main))
 	f.glean.uninstall_all(f, m)
 	dbgvnet.Adj.Logf("uninstall_all %v punt\n", fi.Name(&m.Main))
