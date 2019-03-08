@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+	"time"
 	"unsafe"
 
 	"github.com/platinasystems/elib/cli"
@@ -28,6 +29,7 @@ import (
 	"github.com/platinasystems/vnet/ip4"
 	"github.com/platinasystems/vnet/unix/internal/dbgfdb"
 	"github.com/platinasystems/xeth"
+	"github.com/platinasystems/xeth/dbgxeth"
 )
 
 var (
@@ -100,6 +102,9 @@ func (e *fdbEvent) EnqueueMsg(msg []byte) bool {
 	}
 	e.Msgs[e.NumMsgs] = msg
 	e.NumMsgs++
+	if dbgfdb.XethMsg > 0 {
+		logMsg("EnqueueMsg " + Summary(msg, e.fm.m.v))
+	}
 	return true
 }
 
@@ -144,19 +149,31 @@ func gofdb(v *vnet.Vnet) {
 	m := GetMain(v)
 	fdbm := &m.FdbMain
 	fe := fdbm.GetEvent(vnet.Dynamic)
+	dbgfdb.XethMsg.Log("start")
+	numMsgs := 0
 	for msg := range xeth.RxCh {
+		numMsgs++
 		if ok := fe.EnqueueMsg(msg); !ok {
+			if dbgfdb.XethMsg > 0 {
+				logMsg(fmt.Sprintf("gofdb Signal from EnqueueMsg full %v msgs last(%v)", numMsgs, Summary(msg, v)))
+			}
 			fe.Signal()
+			numMsgs = 0
 			fe = fdbm.GetEvent(vnet.Dynamic)
 			if ok = fe.EnqueueMsg(msg); !ok {
 				panic("Can't enqueue fdb")
 			}
 		}
 		if len(xeth.RxCh) == 0 {
+			if dbgfdb.XethMsg > 0 {
+				logMsg(fmt.Sprintf("gofdb Signal from xeth.RxCh empty %v msgs last(%v)", numMsgs, Summary(msg, v)))
+			}
 			fe.Signal()
+			numMsgs = 0
 			fe = fdbm.GetEvent(vnet.Dynamic)
 		}
 	}
+	dbgfdb.XethMsg.Log("quit")
 }
 
 func (e *fdbEvent) EventAction() {
@@ -164,10 +181,13 @@ func (e *fdbEvent) EventAction() {
 	m := e.fm
 	vn := m.m.v
 
+	if dbgfdb.XethMsg > 0 {
+		logMsg(fmt.Sprintf("EventAction %v msgs", e.NumMsgs))
+	}
+
 	for i := 0; i < e.NumMsgs; i++ {
 		msg := e.Msgs[i]
 		kind := xeth.KindOf(msg)
-		dbgfdb.XethMsg.Log("kind:", kind)
 		ptr := unsafe.Pointer(&msg[0])
 		switch xeth.KindOf(msg) {
 		case xeth.XETH_MSG_KIND_NEIGH_UPDATE:
@@ -491,8 +511,8 @@ func ProcessFibEntry(msg *xeth.MsgFibentry, v *vnet.Vnet) (err error) {
 	var isMainUc bool = msg.Id == xeth.RT_TABLE_MAIN && msg.Type == xeth.RTN_UNICAST
 
 	netns := xeth.Netns(msg.Net)
-	rtn := xeth.Rtn(msg.Id)
-	rtt := xeth.RtTable(msg.Type)
+	rtn := xeth.Rtn(msg.Type)
+	rtt := xeth.RtTable(msg.Id)
 	dbgfdb.Fib.Log(msg)
 	// fwiw netlink handling also filters RTPROT_KERNEL and RTPROT_REDIRECT
 	if msg.Type != xeth.RTN_UNICAST || msg.Id != xeth.RT_TABLE_MAIN {
@@ -1225,6 +1245,91 @@ func (m *FdbMain) fdbPortShow(c cli.Commander, w cli.Writer, in *cli.Input) (err
 	return
 }
 
+const maxMsgHistory = 1000
+
+var msgHistory []string
+
+func Summary(buff []byte, v *vnet.Vnet) (s string) {
+	kind := xeth.KindOf(buff)
+	ptr := unsafe.Pointer(&buff[0])
+	switch kind {
+	case xeth.XETH_MSG_KIND_BREAK:
+	case xeth.XETH_MSG_KIND_LINK_STAT:
+	case xeth.XETH_MSG_KIND_ETHTOOL_STAT:
+	case xeth.XETH_MSG_KIND_ETHTOOL_FLAGS:
+		msg := (*xeth.MsgEthtoolFlags)(ptr)
+		xethif := xeth.Interface.Indexed(msg.Ifindex)
+		ifname := xethif.Ifinfo.Name
+		s = fmt.Sprintf("%v %v %v", kind, ifname, xeth.EthtoolPrivFlags(msg.Flags))
+	case xeth.XETH_MSG_KIND_ETHTOOL_SETTINGS:
+		msg := (*xeth.MsgEthtoolSettings)(ptr)
+		xethif := xeth.Interface.Indexed(msg.Ifindex)
+		ifname := xethif.Ifinfo.Name
+		s = fmt.Sprintf("%v %v autoneg %v speed %v", kind, ifname, msg.Autoneg, xeth.Mbps(msg.Speed))
+	case xeth.XETH_MSG_KIND_DUMP_IFINFO:
+	case xeth.XETH_MSG_KIND_CARRIER:
+	case xeth.XETH_MSG_KIND_SPEED:
+	case xeth.XETH_MSG_KIND_IFINFO:
+		msg := (*xeth.MsgIfinfo)(ptr)
+		ifname := (*xeth.Ifname)(&msg.Ifname).String()
+		s = fmt.Sprintf("%v %v %v", kind, ifname, xeth.DevType(msg.Devtype))
+	case xeth.XETH_MSG_KIND_IFA:
+		msg := (*xeth.MsgIfa)(ptr)
+		ifname := fmt.Sprintf("unknown ifindex %v", msg.Ifindex)
+		if xethif := xeth.Interface.Indexed(msg.Ifindex); xethif != nil {
+			ifname = xethif.Ifinfo.Name
+		}
+		s = fmt.Sprintf("%v %v %v %v", kind, ifname, xeth.IfaEvent(msg.Event), msg.IPNet())
+	case xeth.XETH_MSG_KIND_DUMP_FIBINFO:
+	case xeth.XETH_MSG_KIND_FIBENTRY:
+		msg := (*xeth.MsgFibentry)(ptr)
+		netns := xeth.Netns(msg.Net)
+		namespace := fmt.Sprintf("unknown namespace %v", netns)
+		if ns := getNsByInode(GetMain(v), msg.Net); ns != nil {
+			namespace = fmt.Sprintf("namespace %v", ns.name)
+		}
+		rtn := xeth.Rtn(msg.Type)
+		rtt := xeth.RtTable(msg.Id)
+		s = fmt.Sprintf("%v %v %v %v %v %v", kind, namespace, rtn, rtt, msg.Prefix(), msg.NextHops())
+	case xeth.XETH_MSG_KIND_IFDEL:
+	case xeth.XETH_MSG_KIND_NEIGH_UPDATE:
+		msg := (*xeth.MsgNeighUpdate)(ptr)
+		netns := xeth.Netns(msg.Net)
+		addr := msg.CloneIP()
+		devName := fmt.Sprintf("unknown si %v", msg.Ifindex)
+		namespace := fmt.Sprintf("unknown namespace %v", netns)
+		if ns := getNsByInode(GetMain(v), msg.Net); ns != nil {
+			if si, ok := ns.siForIfIndex(uint32(msg.Ifindex)); ok {
+				devName = si.Name(v)
+			}
+			namespace = fmt.Sprintf("namespace %v", ns.name)
+		}
+		s = fmt.Sprintf("%v %v %v dev %v lladdr %v", kind, namespace, addr.String(), devName, ethernet.Address(msg.Lladdr))
+	case xeth.XETH_MSG_KIND_IFVID:
+	case xeth.XETH_MSG_KIND_CHANGE_UPPER:
+		msg := (*xeth.MsgChangeUpper)(ptr)
+		s = fmt.Sprintf("%v", msg.Kind)
+	default:
+		s = fmt.Sprintf("%v", kind)
+	}
+	return
+}
+
+func logMsg(s string) {
+	if len(msgHistory) > maxMsgHistory {
+		msgHistory = msgHistory[1:]
+	}
+	s = fmt.Sprintf("%v ", time.Now().Format(time.UnixDate)) + s
+	msgHistory = append(msgHistory, s)
+}
+
+func (m *FdbMain) showLastFdbMsgs(c cli.Commander, w cli.Writer, in *cli.Input) (err error) {
+	for _, line := range msgHistory {
+		fmt.Fprintln(w, line)
+	}
+	return nil
+}
+
 func (m *FdbMain) cliInit() (err error) {
 	v := m.m.v
 
@@ -1237,6 +1342,24 @@ func (m *FdbMain) cliInit() (err error) {
 	}
 	for i := range cmds {
 		v.CliAdd(&cmds[i])
+	}
+	if dbgfdb.XethMsg > 0 {
+		lsh := fmt.Sprintf("show last %v received xeth messages", maxMsgHistory)
+		cmd := cli.Command{
+			Name:      "show last-fdb-msgs",
+			ShortHelp: lsh,
+			Action:    m.showLastFdbMsgs,
+		}
+		v.CliAdd(&cmd)
+	}
+	if dbgxeth.Chan > 0 {
+		lsh := fmt.Sprintf("show last %v messages to/from kernel", xeth.MaxEventHistory)
+		cmd := cli.Command{
+			Name:      "show last-kernel-msgs",
+			ShortHelp: lsh,
+			Action:    xeth.ShowLastEvents,
+		}
+		v.CliAdd(&cmd)
 	}
 	return
 }
