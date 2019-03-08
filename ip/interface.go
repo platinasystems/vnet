@@ -182,3 +182,14 @@ func (m *Main) AddDelInterfaceAddress(si vnet.Si, p *net.IPNet, isDel bool) (ai 
 	}
 	return
 }
+
+// deletes ALL interface addresses
+func (m *Main) InterfaceAddressReset(v *vnet.Vnet) {
+	v.ForeachSwIf(func(si vnet.Si) {
+		m.ForeachIfAddress(si, func(ia IfAddr, ifa *IfAddress) (err error) {
+			p := ifa.Prefix
+			m.AddDelInterfaceAddress(si, &p, true)
+			return
+		})
+	})
+}
