@@ -400,6 +400,10 @@ func (m *MapFib) UnsetFirst(p *net.IPNet) (oldAdj ip.Adj, ok bool) {
 
 func (m *Main) ForeachUnresolved(fn func(fi ip.FibIndex, p net.IPNet)) {
 	for _, f := range m.fibs {
+		if f == nil {
+			continue
+		}
+		f.unreachable.validateLen(32)
 		for _, rs := range f.unreachable[32] {
 			for _, r := range rs {
 				fn(f.index, r.Prefix)
