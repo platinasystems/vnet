@@ -93,6 +93,30 @@ func (p *Prefix) IsMoreSpecific(q *Prefix) (ok bool) {
 	return
 }
 
+// Like IsMoreSpecific but qualify by returning if prefix matches
+func (p *Prefix) IsMoreSpecificMatch(q *Prefix) (more, match bool) {
+	lessLen := p.Len
+	if more = (p.Len > q.Len); more {
+		lessLen = q.Len
+	}
+
+	// Compare masked bits up to less specific length.
+	i, n_left := 0, int(lessLen)
+	for n_left > 0 {
+		mask := byte(0xff)
+		if n_left < 8 {
+			mask = (1<<uint(n_left) - 1) << uint(8-n_left)
+		}
+		match = p.Address[i]&mask == q.Address[i]&mask
+		if !match {
+			return
+		}
+		i++
+		n_left -= 8
+	}
+	return
+}
+
 func (p *Prefix) String(m *Main) string {
 	return m.AddressStringer(&p.Address) + "/" + strconv.Itoa(int(p.Len))
 }
