@@ -1028,8 +1028,8 @@ func sendFdbEventIfInfo(v *vnet.Vnet) {
 	}
 
 	xeth.Interface.Iterate(func(entry *xeth.InterfaceEntry) error {
-		for upper, _ := range entry.Uppers {
-			buf := makeMsgChangeUpper(entry.Index, upper)
+		entry.Uppers.Range(func(key, value interface{}) bool {
+			buf := makeMsgChangeUpper(entry.Index, key.(int32))
 			ok := fe.EnqueueMsg(buf)
 			if !ok {
 				// filled event with messages so send event and start a new one
@@ -1040,7 +1040,8 @@ func sendFdbEventIfInfo(v *vnet.Vnet) {
 					panic("sendFdbEventIfInfo: Re-enqueue of msg failed")
 				}
 			}
-		}
+			return true
+		})
 		return nil
 	})
 

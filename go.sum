@@ -25,6 +25,8 @@ github.com/platinasystems/xeth v1.1.0 h1:xTGBrXepuXM+N0sb4lqY1fIkfu17fnPo4Hr53gn
 github.com/platinasystems/xeth v1.1.0/go.mod h1:MokUskjwMrKdnZ08SVlEh9dkQreCHtPPEMFA81kdahI=
 github.com/platinasystems/xeth v1.1.1 h1:zfN6+gAuZXjJev9JkZ8layQOR/mT3bchD962Vtfs9uI=
 github.com/platinasystems/xeth v1.1.1/go.mod h1:MokUskjwMrKdnZ08SVlEh9dkQreCHtPPEMFA81kdahI=
+github.com/platinasystems/xeth v1.2.0 h1:hiKWh/UmTWuj8+PXaOO8qPwL2xUjwyo9bEv3vkcHbTE=
+github.com/platinasystems/xeth v1.2.0/go.mod h1:MokUskjwMrKdnZ08SVlEh9dkQreCHtPPEMFA81kdahI=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.1 h1:mUhvW9EsL+naU5Q3cakzfE91YhliOondGd6ZrsDBHQE=
 gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
