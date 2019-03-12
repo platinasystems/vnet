@@ -184,6 +184,9 @@ func (s *SwIf) GetType(v *Vnet) swInterfaceTyper {
 func (si Si) GetType(v *Vnet) swInterfaceTyper {
 	return v.SwIf(si).GetType(v)
 }
+func (si Si) SupSi(v *Vnet) Si {
+	return v.SwIf(si).supSi
+}
 
 type swIfFlag uint16
 
@@ -377,6 +380,8 @@ func (i Si) Name(v *Vnet) string {
 	if v.SwIfValid(i) {
 		s := v.SwIf(i)
 		return s.name
+	} else if i == SiNil {
+		return "SiNil"
 	} else {
 		return fmt.Sprintf("si %v ???", i)
 	}
@@ -639,6 +644,13 @@ func (m *interfaceMain) GetIfThread(id uint) (t *InterfaceThread) {
 	return
 }
 func (n *Node) GetIfThread() *InterfaceThread { return n.Vnet.GetIfThread(n.ThreadId()) }
+
+func (v *Vnet) ForeachSwIf(f func(si Si)) {
+	v.swInterfaces.ForeachIndex(func(i uint) {
+		si := Si(i)
+		f(si)
+	})
+}
 
 func (v *Vnet) ForeachHwIf(unixOnly bool, f func(hi Hi)) {
 	for i := range v.hwIferPool.elts {
