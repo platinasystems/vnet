@@ -12,9 +12,9 @@ import (
 
 	"fmt"
 	"sort"
-	"time"
-	"strings"
 	"strconv"
+	"strings"
+	"time"
 )
 
 func (hi *Hi) ParseWithArgs(in *parse.Input, args *parse.Args) {
@@ -287,9 +287,9 @@ func (v *Vnet) showSwIfs(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 	} else {
 		fmt.Fprintln(w, "All counters are zero")
 	}
-	fmt.Fprintf(w, "sideband%34v%-30v%16v\n", "", "to-cpu packets",
+	fmt.Fprintf(w, "sideband%34v%-30v%16v\n", "", "to-kernel sent packets",
 		xeth.Count.Tx.Sent)
-	fmt.Fprintf(w, "sideband%34v%-30v%16v\n", "", "to-cpu dropped packets",
+	fmt.Fprintf(w, "sideband%34v%-30v%16v\n", "", "to-kernel dropped packets",
 		xeth.Count.Tx.Dropped)
 	return
 }
@@ -471,7 +471,7 @@ func (v *Vnet) configPortCounterMap(c cli.Commander, w cli.Writer, in *cli.Input
 	var ctrs string
 	var counters []string
 	for !in.End() {
-		switch{
+		switch {
 		case !in.Parse("port %v", &port, v):
 			err = fmt.Errorf("%v", "no such hardware interface")
 			return
@@ -486,12 +486,12 @@ func (v *Vnet) configPortCounterMap(c cli.Commander, w cli.Writer, in *cli.Input
 	if len(v.GetIfThread(0).HfCounters) == 0 {
 		v.GetIfThread(0).HfCounters = make(map[Hi][]int)
 	}
-	for _,c := range counters {
-		s := strings.Replace(c,"-"," ",-1)
-		for i,k := range nm.Single{
+	for _, c := range counters {
+		s := strings.Replace(c, "-", " ", -1)
+		for i, k := range nm.Single {
 			if s == k {
 				alreadyConfigured := false
-				for _,y := range v.GetIfThread(0).HfCounters[port]{
+				for _, y := range v.GetIfThread(0).HfCounters[port] {
 					if y == i {
 						alreadyConfigured = true
 						break
@@ -514,13 +514,13 @@ func (v *Vnet) showPortCounterMap(c cli.Commander, w cli.Writer, in *cli.Input) 
 	}
 	nm := v.HwIfer(port).GetHwInterfaceCounterNames()
 	counter, ok := v.GetIfThread(0).HfCounters[port]
-	fmt.Fprintln(w,"Port: ",port.Name(v))
-	if ok && len(counter)!=0{
-		fmt.Fprintf(w,"%-5s %-20s\n","Id","Counter")
-		for _,k := range v.GetIfThread(0).HfCounters[port]{
-			fmt.Fprintf(w,"%-5d %-20s\n",k,nm.Single[k])
+	fmt.Fprintln(w, "Port: ", port.Name(v))
+	if ok && len(counter) != 0 {
+		fmt.Fprintf(w, "%-5s %-20s\n", "Id", "Counter")
+		for _, k := range v.GetIfThread(0).HfCounters[port] {
+			fmt.Fprintf(w, "%-5d %-20s\n", k, nm.Single[k])
 		}
-	}else{
+	} else {
 		err = fmt.Errorf("No counters")
 		return
 	}
@@ -529,22 +529,22 @@ func (v *Vnet) showPortCounterMap(c cli.Commander, w cli.Writer, in *cli.Input) 
 func (v *Vnet) deletePortCounterMap(c cli.Commander, w cli.Writer, in *cli.Input) (err error) {
 	var port Hi
 	var ctrs string
-	var counters,ids []string
+	var counters, ids []string
 	if !in.Parse("port %v", &port, v) {
 		err = fmt.Errorf("no such hardware interface")
 		return
 	}
-	var id = make([]int,len(v.GetIfThread(0).HfCounters[port]))
+	var id = make([]int, len(v.GetIfThread(0).HfCounters[port]))
 	for !in.End() {
-		switch{
+		switch {
 		case in.Parse("counters %v", &ctrs):
 			counters = strings.Split(ctrs, ",")
 		case in.Parse("id %v", &ctrs):
 			ids = strings.Split(ctrs, ",")
-			for i,k := range ids {
+			for i, k := range ids {
 				id[i], err = strconv.Atoi(k)
 				if err != nil {
-					err = fmt.Errorf("%s","invalid id entry..")
+					err = fmt.Errorf("%s", "invalid id entry..")
 					return
 				}
 			}
@@ -554,31 +554,31 @@ func (v *Vnet) deletePortCounterMap(c cli.Commander, w cli.Writer, in *cli.Input
 	}
 	if len(id) != 0 {
 		for _, k := range id {
-			for x,y := range v.GetIfThread(0).HfCounters[port]{
+			for x, y := range v.GetIfThread(0).HfCounters[port] {
 				if k == y {
 					v.GetIfThread(0).HfCounters[port] = append(v.GetIfThread(0).HfCounters[port][:x], v.GetIfThread(0).HfCounters[port][x+1:]...)
 				}
 			}
 		}
-	}else if len(counters) != 0{
+	} else if len(counters) != 0 {
 		nm := v.HwIfer(port).GetHwInterfaceCounterNames()
-		for _,c := range counters {
-			s := strings.Replace(c,"-"," ",-1)
-			for i,k := range nm.Single {
+		for _, c := range counters {
+			s := strings.Replace(c, "-", " ", -1)
+			for i, k := range nm.Single {
 				if s == k {
-					for x,y := range v.GetIfThread(0).HfCounters[port]{
-						if i == y{
-							v.GetIfThread(0).HfCounters[port] = append(v.GetIfThread(0).HfCounters[port][:x],v.GetIfThread(0).HfCounters[port][x+1:]...)
+					for x, y := range v.GetIfThread(0).HfCounters[port] {
+						if i == y {
+							v.GetIfThread(0).HfCounters[port] = append(v.GetIfThread(0).HfCounters[port][:x], v.GetIfThread(0).HfCounters[port][x+1:]...)
 						}
 					}
 				}
 			}
 		}
-	}else{
+	} else {
 		_, ok := v.GetIfThread(0).HfCounters[port]
-		if ok{
-			delete(v.GetIfThread(0).HfCounters,port)
-		}else{
+		if ok {
+			delete(v.GetIfThread(0).HfCounters, port)
+		} else {
 			err = fmt.Errorf("No counters")
 			return
 		}
