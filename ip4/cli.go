@@ -212,6 +212,33 @@ func (m *Main) showSummary(w cli.Writer) {
 	}
 }
 
+func (m *Main) showIfa(c cli.Commander, w cli.Writer, in *cli.Input) (err error) {
+	intf := vnet.SiNil
+	v := m.Vnet
+	in.Parse("%v", &intf, v)
+	v.ForeachSwIf(func(si vnet.Si) {
+		if si != intf && intf != vnet.SiNil {
+			return
+		}
+		var lines []string
+		n := 0
+		m.ForeachIfAddress(si, func(ia ip.IfAddr, ifa *ip.IfAddress) (err error) {
+			lines = append(lines, fmt.Sprintf("%10v%v\n", "", ifa.Prefix.String()))
+			n++
+			return
+		})
+		for i, line := range lines {
+			if i == 0 {
+				fmt.Fprintf(w, "%10v%v", si.Name(v)+":", line)
+			} else {
+				fmt.Fprintf(w, "%10v%v", "", line)
+			}
+		}
+		return
+	})
+	return
+}
+
 func (m *Main) cliInit(v *vnet.Vnet) {
 	cmds := [...]cli.Command{
 		cli.Command{
@@ -223,6 +250,11 @@ func (m *Main) cliInit(v *vnet.Vnet) {
 			Name:      "clear ip fib",
 			ShortHelp: "clear ip4 forwarding table statistics",
 			Action:    m.clearIpFib,
+		},
+		cli.Command{
+			Name:      "show ip addr",
+			ShortHelp: "show interface addresses",
+			Action:    m.showIfa,
 		},
 	}
 	for i := range cmds {
