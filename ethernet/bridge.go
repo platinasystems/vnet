@@ -26,13 +26,14 @@ type fdbBridgeMember struct {
 
 // FIXME ifindex for bridge is not global, must include netns
 type fdbBridgeIndex struct {
-	bridge int32
-	member int32
-	port   int32
+	bridgeIfindex int32
+	memberIfindex int32
+	portIfindex   int32
 }
 
 // map TH fdb stag/pipe_port to linux netns/ifindex for bridge and bridge-member
 // fe1 reports learning on fdbBrm, convert to fdbBri when reporting to linux
+// sample: {stag:3020 pipe_port:17} {bridge:222222 member:182 port:14} for tb2, xeth5.2, and xeth5
 var fdbBrmToBri = map[fdbBridgeMember]fdbBridgeIndex{}
 
 // learned by pipe_port, lookup bridge member via portvid
@@ -46,16 +47,24 @@ var PipePortByPortVid map[uint16]uint16 // FIXME remove, not needed for learning
 var bridgeByStag map[uint16]*bridgeEntry
 
 func (br *bridgeEntry) String() (dump string) {
-	dump = fmt.Sprintf("%v, si %v, stag %v, addr %v\n",
-		br.port.Ifname, vnet.SiByIfindex[br.port.Ifindex], br.port.Stag, br.port.StationAddr)
-	dump += fmt.Sprintf("_macToIfindex: %v entries\n", len(br._macToIfindex))
-	for addr, ifindex := range br._macToIfindex {
-		dump += fmt.Sprintf(" %v learned on ifindex %v", addr.String(), ifindex)
+	var lrnPerIfindex map[int32]int
+
+	dump = fmt.Sprintf("bridge %v, ifindex %v, si %v, stag %v, addr %v\n",
+		br.port.Ifname, br.port.Ifindex, vnet.SiByIfindex[br.port.Ifindex], br.port.Stag, br.port.StationAddr)
+	lrnPerIfindex = make(map[int32]int)
+	for _, ifindex := range br._macToIfindex {
+		prev, ok := lrnPerIfindex[ifindex]
+		if !ok {
+			prev = 0
+		}
+		lrnPerIfindex[ifindex] = prev + 1
+	}
+	for ifindex, count := range lrnPerIfindex {
 		be := vnet.PortsByIndex[ifindex]
 		if be != nil {
-			dump += fmt.Sprintf(" %v", be.Ifname)
+			dump += fmt.Sprintf("\t%v,", be.Ifname)
 		}
-		dump += fmt.Sprintf("\n")
+		dump += fmt.Sprintf(" ifindex %v, #hw_learn %v\n", ifindex, count)
 	}
 	return
 }
@@ -63,7 +72,7 @@ func (br *bridgeEntry) String() (dump string) {
 // number of bridge members on a port
 func numBrmOnPort(ifindex int32) (brgMems uint8) {
 	for _, bri := range fdbBrmToBri {
-		if bri.port == ifindex {
+		if bri.portIfindex == ifindex {
 			brgMems++
 		}
 	}
@@ -84,11 +93,11 @@ func (br *bridgeEntry) LookupSiCtag(da Address, v *vnet.Vnet) (si vnet.Si, ctag 
 	fdbBri = fdbBrmToBri[fdbBrm]
 	dbgvnet.Bridge.Logf("br fe1 lookup[%v] %+v=>%+v, err %v", hw_addr, fdbBrm, fdbBri, err)
 
-	if fdbBri.member == 0 {
+	if fdbBri.memberIfindex == 0 {
 		si = vnet.SiNil
 	} else {
-		brm := vnet.PortsByIndex[fdbBri.member]
-		si = vnet.SiByIfindex[fdbBri.member]
+		brm := vnet.PortsByIndex[fdbBri.memberIfindex]
+		si = vnet.SiByIfindex[fdbBri.memberIfindex]
 		ctag = brm.Ctag
 		dbgvnet.Bridge.Logf("br stag %v, ctag %v, si %v, type %v",
 			brm.Stag, ctag, si, brm.Devtype)
@@ -158,8 +167,8 @@ func ProcessChangeUpper(msg *xeth.MsgChangeUpper, action vnet.ActionType, v *vne
 				dbgvnet.Bridge.Logf("brm del %+v, %+v, br.stag:%v, portvid:%v",
 					fdbBrm, fdbBri, brUpper.port.Stag, portLower.PortVid)
 				delete(fdbBrmToBri, fdbBrm)
-				v.BridgeMemberAddDelHook(fdbBrm.stag, vnet.SiByIfindex[fdbBri.member],
-					fdbBrm.pipe_port, portLower.Ctag, false, numBrmOnPort(fdbBri.port))
+				v.BridgeMemberAddDelHook(fdbBrm.stag, vnet.SiByIfindex[fdbBri.memberIfindex],
+					fdbBrm.pipe_port, portLower.Ctag, false, numBrmOnPort(fdbBri.portIfindex))
 				portLower.Stag = 0
 				portLower.Devtype = xeth.XETH_DEVTYPE_LINUX_VLAN
 			} else {
@@ -175,9 +184,9 @@ func ProcessChangeUpper(msg *xeth.MsgChangeUpper, action vnet.ActionType, v *vne
 			dbgvnet.Bridge.Logf("brm add, REPLACE %+v %+v", fdbBrm, fdbBri) // FIXME cleanup fe1 if this ever happens
 			delete(fdbBrmToBri, fdbBrm)
 		}
-		fdbBri.bridge = msg.Upper
-		fdbBri.member = msg.Lower
-		fdbBri.port = portLower.Iflinkindex
+		fdbBri.bridgeIfindex = msg.Upper
+		fdbBri.memberIfindex = msg.Lower
+		fdbBri.portIfindex = portLower.Iflinkindex
 
 		dbgvnet.Bridge.Logf("brm add %+v, %+v, br.stag=%v, portvid %v",
 			fdbBrm, fdbBri, brUpper.port.Stag, portLower.PortVid)
@@ -186,8 +195,8 @@ func ProcessChangeUpper(msg *xeth.MsgChangeUpper, action vnet.ActionType, v *vne
 		// indexed by portvid/stag in map
 		portLower.Stag = brUpper.port.Stag
 
-		v.BridgeMemberAddDelHook(fdbBrm.stag, vnet.SiByIfindex[fdbBri.member],
-			fdbBrm.pipe_port, portLower.Ctag, true, numBrmOnPort(fdbBri.port))
+		v.BridgeMemberAddDelHook(fdbBrm.stag, vnet.SiByIfindex[fdbBri.memberIfindex],
+			fdbBrm.pipe_port, portLower.Ctag, true, numBrmOnPort(fdbBri.portIfindex))
 		portLower.Devtype = xeth.XETH_DEVTYPE_LINUX_VLAN_BRIDGE_PORT
 	}
 	return
@@ -254,7 +263,7 @@ func goSviFromFe() {
 				fdbBrm.stag = msg.Stag
 				fdbBrm.pipe_port = msg.PipePort
 				fdbBri = fdbBrmToBri[fdbBrm]
-				br._macToIfindex[msg.Addr] = fdbBri.member
+				br._macToIfindex[msg.Addr] = fdbBri.memberIfindex
 			case msg.MsgId == vnet.MSG_SVI_FDB_DELETE:
 				delete(br._macToIfindex, msg.Addr)
 			}

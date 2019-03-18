@@ -109,19 +109,21 @@ func (m *Main) fdbBridgeShow(c cli.Commander, w cli.Writer, in *cli.Input) (err 
 
 	brmPerPort = make(map[int32]uint32)
 
-	for stag, br := range bridgeByStag {
-		fmt.Fprintf(w, "bridgeByStag[%v] %s\n", stag, br)
+	fmt.Fprintf(w, "bridgeByStag\n")
+	for _, br := range bridgeByStag {
+		fmt.Fprintln(w, br)
 	}
-	fmt.Fprintf(w, "fdbBrmToBri\n")
+	fmt.Fprintf(w, "\nfdbBrmToBri\n")
 	for brm, bri := range fdbBrmToBri {
-		if count, ok := brmPerPort[bri.port]; ok {
-			brmPerPort[bri.port] = count + 1
+		if count, ok := brmPerPort[bri.portIfindex]; ok {
+			brmPerPort[bri.portIfindex] = count + 1
 		} else {
-			brmPerPort[bri.port] = 1
+			brmPerPort[bri.portIfindex] = 1
 		}
-		fmt.Fprintf(w, "%+v %+v\n", brm, bri)
+		m := vnet.PortsByIndex[bri.memberIfindex]
+		fmt.Fprintf(w, "%v %+v %+v\n", m.Ifname, brm, bri)
 	}
-	fmt.Fprintf(w, "brmPerPort\n")
+	fmt.Fprintf(w, "\nbrmPerPort\n")
 	for port, count := range brmPerPort {
 		fmt.Fprintf(w, "port %v, count %v\n", port, count)
 	}
