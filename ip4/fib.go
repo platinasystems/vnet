@@ -186,6 +186,9 @@ type FibResultVec []FibResult
 type MapFib [1 + 32]map[string]FibResultVec
 
 func (r *FibResult) String(m *Main) (s string) {
+	if dbgvnet.Adj == 0 {
+		return "noop"
+	}
 	n := " no nexthops\n"
 	if len(r.Nhs) > 0 {
 		n = " nexthops:\n"
@@ -614,6 +617,9 @@ type ipre struct {
 type mapFibResultNextHop map[ipre]nhUsage
 
 func (mp mapFibResultNextHop) String(m *Main) string {
+	if dbgvnet.Adj == 0 {
+		return "noop"
+	}
 	s := "used by: "
 	if len(mp) == 0 {
 		s += "none"

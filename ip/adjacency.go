@@ -254,6 +254,9 @@ func (n *NextHop) FinalizeAdjacency(a *Adjacency)   {}
 type NextHopVec []NextHop
 
 func (nhs NextHopVec) ListNhs(m *Main) string {
+	if dbgvnet.Adj == 0 {
+		return "noop"
+	}
 	s := ""
 	for _, nh := range nhs {
 		s += fmt.Sprintf("  ip:%v intf:%v adj:%v weight:%v\n", nh.Address, nh.Si.Name(m.v), nh.Adj, nh.Weight)
@@ -646,6 +649,9 @@ func (m *Main) checkMpAdj(mpAdj Adj) {
 }
 
 func (nhs nextHopVec) ListNhs(m *Main) string {
+	if dbgvnet.Adj == 0 {
+		return "noop"
+	}
 	s := ""
 	for nhi := range nhs {
 		nh := &nhs[nhi]
