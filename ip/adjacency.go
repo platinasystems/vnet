@@ -135,7 +135,7 @@ func (a *Adjacency) IsRewrite() bool { return a.LookupNextIndex == LookupNextRew
 func (a *Adjacency) IsLocal() bool   { return a.LookupNextIndex == LookupNextLocal }
 func (a *Adjacency) IsGlean() bool   { return a.LookupNextIndex == LookupNextGlean }
 
-func (a *Adjacency) String(m *Main) (lines []string) {
+func (a *Adjacency) AdjLines(m *Main) (lines []string) {
 	lines = append(lines, a.LookupNextIndex.String())
 	ni := a.LookupNextIndex
 	switch ni {
@@ -562,9 +562,9 @@ func (m *Main) createMpAdj(given nextHopVec, af AdjacencyFinalizer) (madj *multi
 
 	nAdj, norm := resolved.normalizePow2(mp, &mp.cachedNextHopVec[2])
 
-	dbgvnet.Adj.Logf("given nhs:%v\n", given.ListNhs(m))
-	dbgvnet.Adj.Logf("resolved nhs:%v\n", resolved.ListNhs(m))
-	dbgvnet.Adj.Logf("normalized nhs:%v\n", norm.ListNhs(m))
+	dbgvnet.Adj.Log("given nhs:", given.ListNhs(m))
+	dbgvnet.Adj.Log("resolved nhs:", resolved.ListNhs(m))
+	dbgvnet.Adj.Log("normalized nhs:", norm.ListNhs(m))
 
 	// Use given next hops to see if we've seen a block equivalent to this one before. (not really, norm is built from resolved)
 	i, ok := mp.nextHopHash.Get(norm)
@@ -777,15 +777,14 @@ func (m *Main) AddNextHopsAdj(nhs NextHopVec) (newAdj Adj, ok bool) {
 					}
 				}
 				if !found {
-					dbgvnet.Adj.Logf("DEBUG DEBUG %v adj %v in newAdjs is not in requested nexthops", adjs[ai].String(m), nnh.Adj)
 					failed = true
 				}
 				ai += Adj(nnh.Weight)
 			}
 			if failed {
 				dbgvnet.Adj.Log("DEBUG DEBUG requested and new nexthops don't match")
-				dbgvnet.Adj.Logf("DEBUG DEBUG requested:\n%v", nhs.ListNhs(m))
-				dbgvnet.Adj.Logf("DEBUG DEBUG new: %v\n", new_nhs.ListNhs(m))
+				dbgvnet.Adj.Log("DEBUG DEBUG requested:", nhs.ListNhs(m))
+				dbgvnet.Adj.Log("DEBUG DEBUG new:", new_nhs.ListNhs(m))
 			}
 
 		}
@@ -951,9 +950,8 @@ func (m *Main) IsAdjFree(a Adj) bool {
 
 func (m *Main) FreeAdj(a Adj) bool {
 	// FreeAdj just puts index back into adjacencyHeap
-	// If a is a mpAdj, should call free(m *Main) which includes cleaning up all the other stuff associated with a
-
-	// by the time FreeAdj is call, a should have been poisoned, and IsMpAdj should be false
+	// If a is a mpAdj, should call free(m *Main) instead which includes cleaning up all the other stuff associated with a
+	// by the time FreeAdj is called, a should have been poisoned, and IsMpAdj should be false
 	dbgvnet.Adj.Logf("%v IsMpAdj %v\n", a, m.IsMpAdj(a))
 
 	if !m.adjacencyHeap.IsFree(uint(a)) {

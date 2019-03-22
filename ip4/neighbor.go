@@ -36,7 +36,7 @@ func (n *Neighbor) FinalizeAdjacency(a *ip.Adjacency) {
 	}
 
 	if !a.IsRewrite() {
-		panic(fmt.Errorf("adjacency not rewrite %v", a.String(&m.Main)))
+		panic(fmt.Errorf("adjacency not rewrite %v", a.AdjLines(&m.Main)))
 	}
 
 	r := &a.Rewrite
