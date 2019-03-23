@@ -14,6 +14,11 @@ import (
 // Dense index into fib vector.
 type FibIndex uint32
 
+type FibName struct {
+	M *Main
+	I FibIndex
+}
+
 //go:generate gentemplate -d Package=ip -id FibIndex -d VecType=FibIndexVec -d Type=FibIndex github.com/platinasystems/elib/vec.tmpl
 
 // Sparse 32 bit id for route table.
@@ -71,4 +76,15 @@ func (i FibIndex) Name(m *Main) string {
 	} else {
 		return fmt.Sprintf("%d", i)
 	}
+}
+func (n FibName) String() (s string) {
+	f := &n.M.fibMain
+	s = fmt.Sprintf("%d", n.I)
+	if f == nil {
+		return
+	}
+	if uint(n.I) < f.nameByIndex.Len() {
+		s = f.nameByIndex[n.I]
+	}
+	return
 }

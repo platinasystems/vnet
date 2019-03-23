@@ -480,6 +480,7 @@ func (m *MapFib) uninstall_local_all(f *Fib, ma *Main) {
 
 type Fib struct {
 	index ip.FibIndex
+	Name  ip.FibName
 
 	// reachable and unreachable IP address from neighbor messages
 	// these have 1 entry per prefix
@@ -510,7 +511,7 @@ func (f *Fib) addFib(m *Main, r *FibResult) (installed bool) {
 	if r == nil {
 		panic(fmt.Errorf("addFib got nil FibResult pointer for argument"))
 	}
-	dbgvnet.Adj.Logf("%v\n%v", f.index.Name(&m.Main), r)
+	dbgvnet.Adj.Logf("%v\n%v", f.Name, r)
 	p := r.Prefix
 	// check if there is already an adj installed with same prefix
 	oldr, found := f.GetInstalled(&p)
@@ -563,7 +564,7 @@ func (f *Fib) delFib(m *Main, r *FibResult) {
 	if r == nil {
 		panic(fmt.Errorf("delFib got nil FibResult pointer for argument"))
 	}
-	dbgvnet.Adj.Logf("%v: %v", f.index.Name(&m.Main), r)
+	dbgvnet.Adj.Logf("%v: %v", f.Name, r)
 	if !r.Installed {
 		dbgvnet.Adj.Logf("prefix %v of type %v was not installed to begin with\n",
 			r.Prefix, r.Type)
@@ -674,7 +675,7 @@ func (f *Fib) setReachable(m *Main, p *net.IPNet, pf *Fib, nhr NextHop, isDel bo
 	if _, r, found := f.GetReachable(&nhp, nhr.Si); found {
 		r.addDelUsedBy(m, pf, p, nhr, isDel)
 		dbgvnet.Adj.Logf("%v %v prefix %v via %v, new result\n%v",
-			vnet.IsDel(isDel), f.index.Name(&m.Main), p, nhr.Address, r)
+			vnet.IsDel(isDel), f.Name, p, nhr.Address, r)
 		return
 	}
 	dbgvnet.Adj.Logf("DEBUG did not find %v in reachable\n", nhr.Address)
@@ -701,7 +702,7 @@ func (f *Fib) setUnreachable(m *Main, p *net.IPNet, pf *Fib, nhr NextHop, isDel 
 			f.unreachable.UnsetConn(&nhp, nhr.Si)
 		}
 		dbgvnet.Adj.Logf("%v %v prefix %v via %v, updated result\n%v",
-			vnet.IsDel(isDel), f.index.Name(&m.Main), p, nhr.Address, r)
+			vnet.IsDel(isDel), f.Name, p, nhr.Address, r)
 		return
 	}
 	if !found && isDel {
@@ -786,7 +787,7 @@ func (f *Fib) addDelReachable(m *Main, r *FibResult, isDel bool) {
 
 	if isDel {
 		dbgvnet.Adj.Logf("delete: %v %v adj %v makeUnreachable\n%v",
-			f.index.Name(&m.Main), &p, a, r)
+			f.Name, &p, a, r)
 		r.makeUnreachable(m, f)
 	} else {
 		if _, ur, found := f.GetUnreachable(&p, si); found {
@@ -796,7 +797,7 @@ func (f *Fib) addDelReachable(m *Main, r *FibResult, isDel bool) {
 		// if not found, then first time nh appears as a neighbor; no UsedBy map to update
 	}
 	dbgvnet.Adj.Logf("%v: %v reachable new reachable:\n%v",
-		vnet.IsDel(isDel), f.index.Name(&m.Main), r)
+		vnet.IsDel(isDel), f.Name, r)
 }
 
 func (f *Fib) GetInstalled(p *net.IPNet) (result *FibResult, ok bool) {
@@ -979,7 +980,13 @@ func (m *fibMain) callFibAddDelHooks(fi ip.FibIndex, p *net.IPNet, r ip.Adj, isD
 func (m *Main) fibByIndex(i ip.FibIndex, create bool) (f *Fib) {
 	m.fibs.Validate(uint(i))
 	if create && m.fibs[i] == nil {
-		m.fibs[i] = &Fib{index: i}
+		m.fibs[i] = &Fib{
+			index: i,
+			Name: ip.FibName{
+				M: &m.Main,
+				I: i,
+			},
+		}
 	}
 	f = m.fibs[i]
 	return
@@ -1147,7 +1154,7 @@ type prefixError struct {
 func (e *prefixError) Error() string { return e.s + ": " + e.p.String() }
 
 func (m *Main) updateAdjAndUsedBy(f *Fib, p *net.IPNet, nhs *ip.NextHopVec, isDel bool) {
-	dbgvnet.Adj.Log(f.index.Name(&m.Main), p, vnet.IsDel(isDel))
+	dbgvnet.Adj.Log(f.Name, p, vnet.IsDel(isDel))
 	for nhi, nh := range *nhs {
 		var (
 			adj   ip.Adj
@@ -1202,8 +1209,8 @@ func (m *Main) AddDelRouteNextHops(fibIndex ip.FibIndex, p *net.IPNet, nhs ip.Ne
 		if oldAdj, r, ok = f.GetFib(p, nhs); ok {
 			f.delFib(m, r) // remove from fib
 		} else {
-			dbgvnet.Adj.Log("DEBUG delete, cannot find", f.index.Name(&m.Main), p)
-			err = fmt.Errorf("AddDelRouteNextHops delete, cannot find %v %v\n", f.index.Name(&m.Main), &p)
+			dbgvnet.Adj.Log("DEBUG delete, cannot find", f.Name, p)
+			err = fmt.Errorf("AddDelRouteNextHops delete, cannot find %v %v\n", f.Name, &p)
 		}
 	}
 	if isReplace {
@@ -1236,7 +1243,7 @@ func (m *Main) AddDelRouteNextHops(fibIndex ip.FibIndex, p *net.IPNet, nhs ip.Ne
 				f.addFib(m, r) // add
 			}
 		} else {
-			dbgvnet.Adj.Log("DEBUG failed to get adj for", f.index.Name(&m.Main), p)
+			dbgvnet.Adj.Log("DEBUG failed to get adj for", f.Name, p)
 		}
 	}
 	return
@@ -1268,8 +1275,8 @@ func (f *Fib) addDelRouteNextHop(m *Main, p *net.IPNet, nhIP net.IP, nhr NextHop
 	l, k := makeKey(p)
 	f.routeFib.validateLen(l)
 	if rs, ok = f.routeFib[l][k]; !ok {
-		dbgvnet.Adj.Log("DEBUG DEBUG", f.index.Name(&m.Main), p, "not found")
-		err = fmt.Errorf("%v %v not found\n", f.index.Name(&m.Main), &p)
+		dbgvnet.Adj.Log("DEBUG DEBUG", f.Name, p, "not found")
+		err = fmt.Errorf("%v %v not found\n", f.Name, &p)
 		return
 	}
 	newAdj = ip.AdjNil
@@ -1307,9 +1314,9 @@ func (f *Fib) addDelRouteNextHop(m *Main, p *net.IPNet, nhIP net.IP, nhr NextHop
 			}
 		} else {
 			dbgvnet.Adj.Logf("DEBUG DEBUG failed to get new adj after %v nh %v from %v %v\n",
-				vnet.IsDel(isDel), nhIP, f.index.Name(&m.Main), &p)
+				vnet.IsDel(isDel), nhIP, f.Name, &p)
 			err = fmt.Errorf("failed to get new adj after %v nh %v from %v %v\n",
-				vnet.IsDel(isDel), nhIP, f.index.Name(&m.Main), &p)
+				vnet.IsDel(isDel), nhIP, f.Name, &p)
 		}
 	})
 	return
@@ -1368,16 +1375,16 @@ func (m *Main) AddDelInterfaceAddressRoute(p *net.IPNet, si vnet.Si, rt RouteTyp
 			if oldAdj, r, ok = f.glean.Set(m, p, ai, nhs, GLEAN); ok {
 				dbgvnet.Adj.Log("call addFib")
 				f.addFib(m, r)
-				dbgvnet.Adj.Logf("set %v glean %v adj %v done\n", f.index.Name(&m.Main), p, ai)
+				dbgvnet.Adj.Logf("set %v glean %v adj %v done\n", f.Name, p, ai)
 				if oldAdj != ip.AdjNil {
 					dbgvnet.Adj.Logf("DEBUG previous %v glean %v adj %v exist and replace with new adj %v\n",
-						f.index.Name(&m.Main), p, oldAdj, ai)
+						f.Name, p, oldAdj, ai)
 					if !m.IsAdjFree(oldAdj) {
 						m.DelAdj(oldAdj)
 					}
 				}
 			} else {
-				dbgvnet.Adj.Logf("DEBUG %v set glean %v adj %v failed\n", f.index.Name(&m.Main), p, ai)
+				dbgvnet.Adj.Logf("DEBUG %v set glean %v adj %v failed\n", f.Name, p, ai)
 			}
 		}
 		if exists {
@@ -1389,7 +1396,7 @@ func (m *Main) AddDelInterfaceAddressRoute(p *net.IPNet, si vnet.Si, rt RouteTyp
 		if isDel {
 			dbgvnet.Adj.Log("get Glean")
 			if _, r, ok = f.GetGlean(p, si); !ok {
-				dbgvnet.Adj.Logf("DEBUG unset %v glean %v not found\n", f.index.Name(&m.Main), &p)
+				dbgvnet.Adj.Logf("DEBUG unset %v glean %v not found\n", f.Name, &p)
 				return
 			}
 			dbgvnet.Adj.Log("call delFib")
@@ -1398,7 +1405,7 @@ func (m *Main) AddDelInterfaceAddressRoute(p *net.IPNet, si vnet.Si, rt RouteTyp
 				if !m.IsAdjFree(oldAdj) {
 					m.DelAdj(oldAdj)
 				}
-				dbgvnet.Adj.Logf("unset %v glean %v done\n", f.index.Name(&m.Main), &p)
+				dbgvnet.Adj.Logf("unset %v glean %v done\n", f.Name, &p)
 			}
 		}
 	}
@@ -1416,14 +1423,14 @@ func (m *Main) AddDelInterfaceAddressRoute(p *net.IPNet, si vnet.Si, rt RouteTyp
 			dbgvnet.Adj.Logf("%v local added adj %v\n", p, ai)
 			if _, r, ok = f.local.Set(m, p, ai, nhs, LOCAL); ok {
 				f.addFib(m, r)
-				dbgvnet.Adj.Logf("set %v local %v adj %v done\n", f.index.Name(&m.Main), p, ai)
+				dbgvnet.Adj.Logf("set %v local %v adj %v done\n", f.Name, p, ai)
 			} else {
-				dbgvnet.Adj.Logf("DEBUG set %v local %v adj %v failed\n", f.index.Name(&m.Main), p, ai)
+				dbgvnet.Adj.Logf("DEBUG set %v local %v adj %v failed\n", f.Name, p, ai)
 			}
 		}
 		if isDel {
 			if _, r, ok = f.GetLocal(p, si); !ok {
-				dbgvnet.Adj.Logf("DEBUG unset %v local %v failed\n", f.index.Name(&m.Main), &p)
+				dbgvnet.Adj.Logf("DEBUG unset %v local %v failed\n", f.Name, &p)
 				return
 			}
 			f.delFib(m, r)
@@ -1431,7 +1438,7 @@ func (m *Main) AddDelInterfaceAddressRoute(p *net.IPNet, si vnet.Si, rt RouteTyp
 				if !m.IsAdjFree(oldAdj) {
 					m.DelAdj(oldAdj)
 				}
-				dbgvnet.Adj.Logf("unset %v local %v done\n", f.index.Name(&m.Main), &p)
+				dbgvnet.Adj.Logf("unset %v local %v done\n", f.Name, &p)
 			}
 		}
 	}
@@ -1517,7 +1524,7 @@ func (m *Main) swIfAddDel(v *vnet.Vnet, si vnet.Si, isUp bool) (err error) {
 	}
 	f := m.fibBySi(si)
 	dbgvnet.Adj.Logf("clean up %v %v %v up=%v",
-		f.index.Name(&m.Main), si, si.Name(v), isUp)
+		f.Name, si, si.Name(v), isUp)
 	mp := &f.glean
 	mp_string := "glean"
 	for _, local := range [2]bool{false, true} {
@@ -1531,7 +1538,7 @@ func (m *Main) swIfAddDel(v *vnet.Vnet, si vnet.Si, isUp bool) (err error) {
 					for _, nh := range mp[i][rsi][ri].Nhs {
 						if nh.Si == si {
 							dbgvnet.Adj.Logf("clean up %v %v %v\n",
-								f.index.Name(&m.Main), mp_string, si.Name(v), &r.Prefix)
+								f.Name, mp_string, si.Name(v), &r.Prefix)
 							f.delFib(m, &mp[i][rsi][ri])
 						}
 					}
