@@ -51,6 +51,7 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 
 	type route struct {
 		prefixFibIndex ip.FibIndex
+		prefixFibName  string
 		prefix         net.IPNet
 		r              FibResult
 	}
@@ -60,30 +61,30 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 		if fib == nil {
 			continue
 		}
-		t := ip.FibIndex(fi).Name(&m.Main)
+		t := fib.Name.String()
 		if cf.showTable != "" && t != cf.showTable {
-			rt := route{prefixFibIndex: ip.FibIndex(fi)}
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefixFibName: t}
 			rs = append(rs, rt)
 			continue
 		}
 		fib.reachable.foreach(func(p net.IPNet, r FibResult) {
-			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: p, r: r}
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefixFibName: t, prefix: p, r: r}
 			rs = append(rs, rt)
 		})
 		fib.routeFib.foreach(func(p net.IPNet, r FibResult) {
-			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: p, r: r}
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefixFibName: t, prefix: p, r: r}
 			rs = append(rs, rt)
 		})
 		fib.glean.foreach(func(p net.IPNet, r FibResult) {
-			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: p, r: r}
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefixFibName: t, prefix: p, r: r}
 			rs = append(rs, rt)
 		})
 		fib.local.foreach(func(p net.IPNet, r FibResult) {
-			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: p, r: r}
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefixFibName: t, prefix: p, r: r}
 			rs = append(rs, rt)
 		})
 		fib.punt.foreach(func(p net.IPNet, r FibResult) {
-			rt := route{prefixFibIndex: ip.FibIndex(fi), prefix: p, r: r}
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefixFibName: t, prefix: p, r: r}
 			rs = append(rs, rt)
 		})
 	}
@@ -107,8 +108,7 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 		if r.r.Installed {
 			in = "Installed"
 		}
-		//header := fmt.Sprintf("%12s%25s%15v", r.prefixFibIndex.Name(&m.Main), &r.prefix, in)
-		header := fmt.Sprintf("%12s%25s%15v", r.prefixFibIndex.Name(&m.Main), r.prefix.String(), in)
+		header := fmt.Sprintf("%12s%25s%15v", r.prefixFibName, &r.prefix, in)
 		indent := fmt.Sprintf("%12s%25s%15v", "", "", "")
 		if r.r.Type == VIA {
 			for i, nh := range r.r.Nhs {
@@ -202,7 +202,7 @@ func (m *Main) showSummary(w cli.Writer) {
 	for fi := range m.fibs {
 		fib := m.fibs[fi]
 		if fib != nil {
-			fmt.Fprintf(w, "%12s%12d\n", ip.FibIndex(fi).Name(&m.Main), fib.Len())
+			fmt.Fprintf(w, "%12s%12d\n", fib.Name, fib.Len())
 		}
 	}
 	u := m.GetAdjacencyUsage()

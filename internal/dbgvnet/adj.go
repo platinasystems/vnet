@@ -5,3 +5,4 @@ package dbgvnet
 import "github.com/platinasystems/dbg"
 
 const Adj = dbg.Func
+const AdjPlain = dbg.Plain

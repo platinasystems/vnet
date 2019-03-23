@@ -69,22 +69,20 @@ func (f *fibMain) SetFibNameForIndex(name string, i FibIndex) {
 	f.nameByIndex.Validate(uint(i))
 	f.nameByIndex[i] = name
 }
-func (i FibIndex) Name(m *Main) string {
-	f := &m.fibMain
+
+func (f *fibMain) FibNameForIndex(i FibIndex) string {
 	if uint(i) < f.nameByIndex.Len() {
 		return f.nameByIndex[i]
 	} else {
 		return fmt.Sprintf("%d", i)
 	}
 }
-func (n FibName) String() (s string) {
+
+func (n FibName) String() string {
 	f := &n.M.fibMain
-	s = fmt.Sprintf("%d", n.I)
 	if f == nil {
-		return
+		return fmt.Sprintf("%d", n.I)
 	}
-	if uint(n.I) < f.nameByIndex.Len() {
-		s = f.nameByIndex[n.I]
-	}
-	return
+	return f.FibNameForIndex(n.I)
+
 }

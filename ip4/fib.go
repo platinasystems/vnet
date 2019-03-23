@@ -511,7 +511,8 @@ func (f *Fib) addFib(m *Main, r *FibResult) (installed bool) {
 	if r == nil {
 		panic(fmt.Errorf("addFib got nil FibResult pointer for argument"))
 	}
-	dbgvnet.Adj.Logf("%v\n%v", f.Name, r)
+	dbgvnet.Adj.Log(f.Name)
+	dbgvnet.AdjPlain.Log(r)
 	p := r.Prefix
 	// check if there is already an adj installed with same prefix
 	oldr, found := f.GetInstalled(&p)
@@ -564,7 +565,8 @@ func (f *Fib) delFib(m *Main, r *FibResult) {
 	if r == nil {
 		panic(fmt.Errorf("delFib got nil FibResult pointer for argument"))
 	}
-	dbgvnet.Adj.Logf("%v: %v", f.Name, r)
+	dbgvnet.Adj.Log(f.Name)
+	dbgvnet.AdjPlain.Log(r)
 	if !r.Installed {
 		dbgvnet.Adj.Logf("prefix %v of type %v was not installed to begin with\n",
 			r.Prefix, r.Type)
@@ -627,7 +629,7 @@ func (mp mapFibResultNextHop) ListIPs(m *Main) string {
 		s += "none"
 	}
 	for dp, _ := range mp {
-		s += fmt.Sprintf(" %v %v;", dp.i.Name(&m.Main), dp.p)
+		s += fmt.Sprintf(" %v %v;", m.Main.FibNameForIndex(dp.i), dp.p)
 	}
 	s += "\n"
 	return s
@@ -714,7 +716,8 @@ func (f *Fib) setUnreachable(m *Main, p *net.IPNet, pf *Fib, nhr NextHop, isDel 
 // ur is a mapFibResult from unreachable that we will move to reachable here
 func (ur *FibResult) makeReachable(m *Main, f *Fib, adj ip.Adj) {
 	a := ur.Prefix.IP
-	dbgvnet.Adj.Logf("unreachable before:\n%v", ur)
+	dbgvnet.Adj.Log("unreachable before")
+	dbgvnet.AdjPlain.Log(ur)
 	for dp, nhu := range ur.usedBy {
 		g := m.fibByIndex(dp.i, false)
 		const isDel = false
@@ -745,7 +748,8 @@ func (ur *FibResult) makeReachable(m *Main, f *Fib, adj ip.Adj) {
 		p := ur.Prefix
 		f.unreachable.UnsetConn(&p, ur.Nhs[0].Si)
 	}
-	dbgvnet.Adj.Logf("unreachable after:\n%v", ur)
+	dbgvnet.Adj.Log("unreachable after", ur)
+	dbgvnet.AdjPlain.Log(ur)
 }
 
 // r is a mapFibResult from reachable that we will move to unreachable here
@@ -1199,7 +1203,7 @@ func (m *Main) updateAdjAndUsedBy(f *Fib, p *net.IPNet, nhs *ip.NextHopVec, isDe
 func (m *Main) AddDelRouteNextHops(fibIndex ip.FibIndex, p *net.IPNet, nhs ip.NextHopVec, isDel bool, isReplace bool) (err error) {
 	f := m.fibByIndex(fibIndex, true)
 	dbgvnet.Adj.Logf("%v %v %v isReplace %v, nhs: \n%v\n",
-		vnet.IsDel(isDel), fibIndex.Name(&m.Main), p, isReplace, nhs.ListNhs(&m.Main))
+		vnet.IsDel(isDel), f.Name, p, isReplace, nhs.ListNhs(&m.Main))
 	var (
 		r      *FibResult
 		ok     bool
@@ -1582,27 +1586,27 @@ func (f *Fib) Reset() {
 }
 
 func (m *Main) FibReset(fi ip.FibIndex) {
+	f := m.fibByIndex(fi, true)
 	for i := range m.fibs {
 		if i != int(fi) && m.fibs[i] != nil {
-			dbgvnet.Adj.Logf("clean up %v reachable references\n", fi.Name(&m.Main))
+			dbgvnet.Adj.Logf("clean up %v reachable references in other fibs\n", f.Name)
 			m.fibs[i].reachable.clean(fi)
-			dbgvnet.Adj.Logf("clean up %v unreachable references\n", fi.Name(&m.Main))
+			dbgvnet.Adj.Logf("clean up %v unreachable references in other fibs\n", f.Name)
 			m.fibs[i].unreachable.clean(fi)
 		}
 	}
 
-	f := m.fibByIndex(fi, true)
-	dbgvnet.Adj.Logf("uninstall_all %v reachable\n", fi.Name(&m.Main))
+	dbgvnet.Adj.Logf("uninstall_all %v reachable\n", f.Name)
 	f.reachable.uninstall_all(f, m)
-	dbgvnet.Adj.Logf("uninstall_all %v unreachable\n", fi.Name(&m.Main))
+	dbgvnet.Adj.Logf("uninstall_all %v unreachable\n", f.Name)
 	f.unreachable.uninstall_all(f, m)
-	dbgvnet.Adj.Logf("uninstall_all %v via routes\n", fi.Name(&m.Main))
+	dbgvnet.Adj.Logf("uninstall_all %v via routes\n", f.Name)
 	f.routeFib.uninstall_all(f, m)
-	dbgvnet.Adj.Logf("uninstall_all %v local\n", fi.Name(&m.Main))
+	dbgvnet.Adj.Logf("uninstall_all %v local\n", f.Name)
 	f.local.uninstall_local_all(f, m)
-	dbgvnet.Adj.Logf("uninstall_all %v glean\n", fi.Name(&m.Main))
+	dbgvnet.Adj.Logf("uninstall_all %v glean\n", f.Name)
 	f.glean.uninstall_all(f, m)
-	dbgvnet.Adj.Logf("uninstall_all %v punt\n", fi.Name(&m.Main))
+	dbgvnet.Adj.Logf("uninstall_all %v punt\n", f.Name)
 	f.punt.uninstall_all(f, m)
 
 	f.Reset()

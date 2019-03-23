@@ -56,7 +56,7 @@ func (m *Main) showIpNeighbor(c cli.Commander, w cli.Writer, in *cli.Input) (err
 		for _, i := range nf.indexByAddress {
 			n := &nf.pool.neighbors[i]
 			fi := im.FibIndexForSi(n.Si)
-			ns := fi.Name(im)
+			ns := im.FibNameForIndex(fi)
 
 			if cf.showTable != "" && ns != cf.showTable {
 				continue
@@ -87,13 +87,13 @@ func (m *Main) showIpNeighbor(c cli.Commander, w cli.Writer, in *cli.Input) (err
 					adj_lines = as[i].AdjLines(im)
 				}
 				if ln == 0 {
-					fmt.Fprintf(w, "%6v%20v dev %10v lladdr %v      adjacency %v:%v\n", ns, ipAddr, intf, lladdr, ai, adj_lines)
+					fmt.Fprintf(w, "%10v%20v dev %10v lladdr %v      adjacency %v:%v\n", ns, ipAddr, intf, lladdr, ai, adj_lines)
 				} else {
-					fmt.Fprintf(w, "%6v%20v dev %10v lladdr %v      adjacency %v:%v\n", "", "unexpected extras", "", "", ai, adj_lines)
+					fmt.Fprintf(w, "%10v%20v dev %10v lladdr %v      adjacency %v:%v\n", "", "unexpected extras", "", "", ai, adj_lines)
 				}
 				ln++
 			} else {
-				fmt.Fprintf(w, "%6v%20v dev %10v lladdr %v      adjacency %v:%v\n", ns, ipAddr, intf, lladdr, ai, "not found")
+				fmt.Fprintf(w, "%10v%20v dev %10v lladdr %v      adjacency %v:%v\n", ns, ipAddr, intf, lladdr, ai, "not found")
 			}
 
 			if cf.detail {
