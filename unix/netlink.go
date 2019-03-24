@@ -602,9 +602,6 @@ func (e *netlinkEvent) ip4NeighborMsg(v *netlink.NeighborMessage) (err error) {
 	}
 	isDel := v.Header.Type == netlink.RTM_DELNEIGH
 	si, ok := e.ns.siForIfIndex(v.Index)
-	if false { // debug print
-		fmt.Printf("netlink NEIGH isDel=%v NDA_LLADDR=%v NDA_DST=%-16v si=%-10v state=%v\n", isDel, ethernetAddress(v.Attrs[netlink.NDA_LLADDR]), v.Attrs[netlink.NDA_DST], si.Name(e.m.v), v.State)
-	}
 	if !isDel {
 		switch v.State {
 		case netlink.NUD_NOARP, netlink.NUD_NONE:

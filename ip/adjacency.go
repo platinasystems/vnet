@@ -140,7 +140,7 @@ func (a *Adjacency) AdjLines(m *Main) (lines []string) {
 	ni := a.LookupNextIndex
 	switch ni {
 	case LookupNextRewrite:
-		l := a.Rewrite.String(m.v)
+		l := a.Rewrite.Lines(m.v)
 		lines[0] += " " + l[0]
 		// If only 2 lines, fit into a single line.
 		if len(l) == 2 {
@@ -149,7 +149,7 @@ func (a *Adjacency) AdjLines(m *Main) (lines []string) {
 			lines = append(lines, l[1:]...)
 		}
 	case LookupNextGlean, LookupNextLocal:
-		lines[0] += " " + a.Si.Name(m.v)
+		lines[0] += " " + fmt.Sprint(vnet.SiName{V: m.v, Si: a.Si})
 	}
 	return
 }
@@ -259,7 +259,7 @@ func (nhs NextHopVec) ListNhs(m *Main) string {
 	}
 	s := ""
 	for _, nh := range nhs {
-		s += fmt.Sprintf("  ip:%v intf:%v adj:%v weight:%v\n", nh.Address, nh.Si.Name(m.v), nh.Adj, nh.Weight)
+		s += fmt.Sprintf("  ip:%v intf:%v adj:%v weight:%v\n", nh.Address, vnet.SiName{V: m.v, Si: nh.Si}, nh.Adj, nh.Weight)
 	}
 	return s
 }

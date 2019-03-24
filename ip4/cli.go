@@ -117,7 +117,7 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 					reach = "unresolved"
 				}
 				line := fmt.Sprintf("%6svia %20v dev %10v weight %3v  %v",
-					"", nh.Address, nh.Si.Name(m.v), nh.Weight, reach)
+					"", nh.Address, vnet.SiName{V: m.v, Si: nh.Si}, nh.Weight, reach)
 				if i == 0 {
 					fmt.Fprintf(w, "%v%v\n", header, line)
 				} else {
@@ -229,7 +229,7 @@ func (m *Main) showIfa(c cli.Commander, w cli.Writer, in *cli.Input) (err error)
 		})
 		for i, line := range lines {
 			if i == 0 {
-				fmt.Fprintf(w, "%10v%v", si.Name(v)+":", line)
+				fmt.Fprintf(w, "%10v:%v", vnet.SiName{V: v, Si: si}, line)
 			} else {
 				fmt.Fprintf(w, "%10v%v", "", line)
 			}

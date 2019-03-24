@@ -193,10 +193,10 @@ func (m *interfaceMain) foreachSwIfCounter(zero bool, si Si, f func(name string,
 	}
 }
 
-func (v *Vnet) ForeachSwIfCounter(zero bool, f func(si Si, name string, value uint64)) {
+func (v *Vnet) ForeachSwIfCounter(zero bool, f func(si Si, siName, counterName string, value uint64)) {
 	v.swInterfaces.Foreach(func(x SwIf) {
-		v.foreachSwIfCounter(zero, x.si, func(name string, value uint64) {
-			f(x.si, name, value)
+		v.foreachSwIfCounter(zero, x.si, func(counterName string, value uint64) {
+			f(x.si, x.Name, counterName, value)
 		})
 	})
 }
@@ -270,12 +270,12 @@ func (m *interfaceMain) foreachHighFreqHwIfCounter(zero bool, hi Hi, f func(name
 	h.GetHwInterfaceCounterValues(t)
 	i := uint(hi)
 
-	for _,k :=  range t.HfCounters[hi] {
+	for _, k := range t.HfCounters[hi] {
 		m.doHwSingle(f, &nm, zero, uint(k), i)
 	}
 }
 func (v *Vnet) ForeachHighFreqHwIfCounter(zero bool, unixOnly bool, f func(hi Hi, name string, value uint64)) {
-	for hi,_ := range v.GetIfThread(0).HfCounters {
+	for hi, _ := range v.GetIfThread(0).HfCounters {
 		hwifer := v.HwIfer(hi)
 		if unixOnly && !hwifer.IsUnix() {
 			continue
@@ -407,7 +407,7 @@ type interfaceThreadCounters struct {
 
 type InterfaceThread struct {
 	// This threads' sw/hw interface counters indexed by counter kind.
-	sw, hw interfaceThreadCounters
+	sw, hw     interfaceThreadCounters
 	HfCounters map[Hi][]int
 }
 

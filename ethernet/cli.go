@@ -77,7 +77,7 @@ func (m *Main) showIpNeighbor(c cli.Commander, w cli.Writer, in *cli.Input) (err
 
 			ipAddr := n.Ip.String()
 			//mac := n.Ethernet.String()
-			intf := n.Si.Name(v)
+			intf := fmt.Sprint(vnet.SiName{V: v, Si: n.Si})
 			lladdr := n.Ethernet.String()
 
 			ai := ip.AdjNil

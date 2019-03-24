@@ -1343,7 +1343,7 @@ func (m *Main) AddDelInterfaceAddressRoute(p *net.IPNet, si vnet.Si, rt RouteTyp
 	sw := m.Vnet.SwIf(si)
 	hw := m.Vnet.SupHwIf(sw)
 	f := m.fibBySi(si)
-	dbgvnet.Adj.Log(vnet.IsDel(isDel), rt, p, si.Name(m.v))
+	dbgvnet.Adj.Log(vnet.IsDel(isDel), rt, p, vnet.SiName{V: m.Vnet, Si: si})
 	if rt == GLEAN {
 		// For glean, need to find the IfAddress based on si and p
 		m.Main.ForeachIfAddress(si, func(iadd ip.IfAddr, i *ip.IfAddress) (err error) {
@@ -1454,8 +1454,8 @@ func (m *Main) AddDelInterfaceAddress(si vnet.Si, addr *net.IPNet, isDel bool) (
 		err = m.ForeachIfAddress(si, func(ia ip.IfAddr, ifa *ip.IfAddress) (err error) {
 			p := &ifa.Prefix
 			if (p.String() != addr.String()) && (addr.Contains(p.IP) || p.Contains(addr.IP)) {
-				err = fmt.Errorf("%s: add %s conflicts with existing address %s", si.Name(m.Vnet), addr, &p)
-				dbgvnet.Adj.Logf("DEBUG %s: add %s conflicts with existing address %s", si.Name(m.Vnet), addr, &p)
+				err = fmt.Errorf("%s: add %s conflicts with existing address %s", vnet.SiName{V: m.Vnet, Si: si}, addr, &p)
+				dbgvnet.Adj.Logf("DEBUG %s: add %s conflicts with existing address %s", vnet.SiName{V: m.Vnet, Si: si}, addr, &p)
 			}
 			return
 		})
@@ -1528,7 +1528,7 @@ func (m *Main) swIfAddDel(v *vnet.Vnet, si vnet.Si, isUp bool) (err error) {
 	}
 	f := m.fibBySi(si)
 	dbgvnet.Adj.Logf("clean up %v %v %v up=%v",
-		f.Name, si, si.Name(v), isUp)
+		f.Name, si, vnet.SiName{V: v, Si: si}, isUp)
 	mp := &f.glean
 	mp_string := "glean"
 	for _, local := range [2]bool{false, true} {
@@ -1542,7 +1542,7 @@ func (m *Main) swIfAddDel(v *vnet.Vnet, si vnet.Si, isUp bool) (err error) {
 					for _, nh := range mp[i][rsi][ri].Nhs {
 						if nh.Si == si {
 							dbgvnet.Adj.Logf("clean up %v %v %v\n",
-								f.Name, mp_string, si.Name(v), &r.Prefix)
+								f.Name, mp_string, vnet.SiName{V: v, Si: si}, &r.Prefix)
 							f.delFib(m, &mp[i][rsi][ri])
 						}
 					}
