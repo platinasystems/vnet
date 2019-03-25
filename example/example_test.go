@@ -200,7 +200,7 @@ func (n *inject_node) NodeOutput(in *vnet.RefIn) {
 	}
 	for i := uint(0); i < l; i++ {
 		r := in.Refs[i]
-		fmt.Printf("%s %s: %x\n", n.Name(), r.Si.Name(n.Vnet), r.DataSlice())
+		fmt.Printf("%s %s: %x\n", n.Name(), vnet.SiName{V: n.Vnet, Si: r.Si}, r.DataSlice())
 	}
 	in.FreeRefs(l)
 }

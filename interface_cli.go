@@ -101,7 +101,8 @@ func (c *ifChooser) finalize() {
 		if len(c.siMap) == 0 || c.re.Valid() {
 			c.v.swInterfaces.ForeachIndex(func(i uint) {
 				si := Si(i)
-				if c.re.Valid() && !c.re.MatchString(si.Name(c.v)) {
+				siName := fmt.Sprint(SiName{V: c.v, Si: si})
+				if c.re.Valid() && !c.re.MatchString(siName) {
 					return
 				}
 				c.siMap[si] = empty
@@ -229,7 +230,7 @@ func (v *Vnet) showSwIfs(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 				return
 			}
 			// Skip interfaces which don't match regexps.
-			if cf.re.Valid() && !cf.re.MatchString(si.Name(v)) {
+			if cf.re.Valid() && !cf.re.MatchString(sw.Name) {
 				return
 			}
 			swIfs.ifs = append(swIfs.ifs, si)
@@ -257,7 +258,7 @@ func (v *Vnet) showSwIfs(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 		sw := v.SwIf(si)
 		first := true
 		firstIf := showSwIf{
-			Name:  si.Name(v),
+			Name:  sw.Name,
 			State: sw.flags.String(),
 		}
 		if cf.summary {
@@ -416,7 +417,7 @@ func (v *Vnet) setSwIf(c cli.Commander, w cli.Writer, in *cli.Input) (err error)
 	switch {
 	case in.Parse("state %v", &isUp):
 		fmt.Fprintf(w, "%v state %v\n",
-			si.Name(v), isUp)
+			swif.Name, isUp)
 		err = swif.SetAdminUp(v, bool(isUp))
 	default:
 		err = cli.ParseError

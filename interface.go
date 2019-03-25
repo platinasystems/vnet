@@ -140,7 +140,7 @@ func (k SwIfKind) String() string {
 }
 
 func (t *SwInterfaceType) GetSwInterfaceType() *SwInterfaceType                                  { return t }
-func (t *SwInterfaceType) SwInterfaceName(v *Vnet, s *SwIf) string                               { return s.name }
+func (t *SwInterfaceType) SwInterfaceName(v *Vnet, s *SwIf) string                               { return s.Name }
 func (t *SwInterfaceType) SwInterfaceSetRewrite(rw *Rewrite, si Si, noder Noder, typ PacketType) {}
 func (t *SwInterfaceType) SwInterfaceRewriteString(v *Vnet, r *Rewrite) []string {
 	hi := v.SupHi(r.Si)
@@ -218,7 +218,7 @@ type IfId IfIndex
 type SwIf struct {
 	kind SwIfKind
 
-	name string //if SwIfKindHardware, then name should same as HwIf.name
+	Name string //if SwIfKindHardware, then name should same as HwIf.name
 
 	flags swIfFlag
 
@@ -255,7 +255,7 @@ func (m *Vnet) addDelSwInterface(siʹ, supSi Si, kind SwIfKind, id IfId, ifname 
 		s.si = si
 		s.supSi = supSi
 		s.id = id
-		s.name = ifname
+		s.Name = ifname
 		m.counterValidateSw(si)
 	}
 
@@ -269,7 +269,7 @@ func (m *Vnet) addDelSwInterface(siʹ, supSi Si, kind SwIfKind, id IfId, ifname 
 	if isDel {
 		s := m.SwIf(si)
 		if s.kind == SwIfKindHardware {
-			panic(fmt.Sprintf("%v %v is a supSi kind %v, cannot delete\n", si, si.Name(m), s.kind))
+			panic(fmt.Sprintf("%v %v is a supSi kind %v, cannot delete\n", si, s.Name, s.kind))
 		}
 		if s := m.SwIf(si); s.kind == SwIfKindSubInterface {
 			h := m.SupHwIf(s)
@@ -285,15 +285,15 @@ func (m *Vnet) addDelSwInterface(siʹ, supSi Si, kind SwIfKind, id IfId, ifname 
 
 // remove ifaddr, neighbor via hooks and admin down (removes glean and local fib), but does not delete the SwIf
 func (m *Vnet) CleanAndDownSwInterface(si Si) {
-	dbgvnet.Adj.Logf("%v", si.Name(m))
+	dbgvnet.Adj.Log(SiName{V: m, Si: si})
 	if err := si.SetAdminUp(m, false); err != nil {
-		dbgvnet.Adj.Logf("SetAdminDown %v and got error %v", si.Name(m), err)
+		dbgvnet.Adj.Logf("SetAdminDown %v and got error %v", SiName{V: m, Si: si}, err)
 	}
 
 	for i := range m.swIfAddDelHooks.hooks {
 		err := m.swIfAddDelHooks.Get(i)(m, si, true)
 		if err != nil {
-			dbgvnet.Adj.Logf("call swIfAddDelHooks %v and got error %v", si.Name(m), err)
+			dbgvnet.Adj.Logf("call swIfAddDelHooks %v and got error %v", SiName{V: m, Si: si}, err)
 		}
 	}
 
@@ -376,20 +376,23 @@ func (s *SwIf) builtinSwIfName(vn *Vnet) (v string) {
 	}
 	return
 }
-func (i Si) Name(v *Vnet) string {
-	if v.SwIfValid(i) {
-		s := v.SwIf(i)
-		return s.name
-	} else if i == SiNil {
-		return "SiNil"
-	} else {
-		return fmt.Sprintf("si %v ???", i)
-	}
-	/*
-		t := v.swInterfaceTypes[s.kind]
-		return t.SwInterfaceName(v, s)
-	*/
+
+type SiName struct {
+	V  *Vnet
+	Si Si
 }
+
+func (sn SiName) String() string {
+	if sn.V.SwIfValid(sn.Si) {
+		s := sn.V.SwIf(sn.Si)
+		return s.Name
+	}
+	if sn.Si == SiNil {
+		return "SiNil"
+	}
+	return fmt.Sprintf("si %v unknown", sn.Si)
+}
+
 func (i Hi) Name(v *Vnet) string { return v.HwIf(i).name }
 
 func (i *SwIf) GetId() IfId { return i.id }
@@ -693,7 +696,7 @@ func (v *Vnet) SwLessThan(a, b *SwIf) bool {
 		return a.kind < b.kind
 	}
 	// Same kind.
-	return a.name < b.name
+	return a.Name < b.Name
 }
 
 // Interface can loopback at MAC or PHY.

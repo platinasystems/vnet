@@ -135,12 +135,12 @@ func (a *Adjacency) IsRewrite() bool { return a.LookupNextIndex == LookupNextRew
 func (a *Adjacency) IsLocal() bool   { return a.LookupNextIndex == LookupNextLocal }
 func (a *Adjacency) IsGlean() bool   { return a.LookupNextIndex == LookupNextGlean }
 
-func (a *Adjacency) String(m *Main) (lines []string) {
+func (a *Adjacency) AdjLines(m *Main) (lines []string) {
 	lines = append(lines, a.LookupNextIndex.String())
 	ni := a.LookupNextIndex
 	switch ni {
 	case LookupNextRewrite:
-		l := a.Rewrite.String(m.v)
+		l := a.Rewrite.Lines(m.v)
 		lines[0] += " " + l[0]
 		// If only 2 lines, fit into a single line.
 		if len(l) == 2 {
@@ -149,7 +149,7 @@ func (a *Adjacency) String(m *Main) (lines []string) {
 			lines = append(lines, l[1:]...)
 		}
 	case LookupNextGlean, LookupNextLocal:
-		lines[0] += " " + a.Si.Name(m.v)
+		lines[0] += " " + fmt.Sprint(vnet.SiName{V: m.v, Si: a.Si})
 	}
 	return
 }
@@ -254,9 +254,12 @@ func (n *NextHop) FinalizeAdjacency(a *Adjacency)   {}
 type NextHopVec []NextHop
 
 func (nhs NextHopVec) ListNhs(m *Main) string {
+	if dbgvnet.Adj == 0 {
+		return "noop"
+	}
 	s := ""
 	for _, nh := range nhs {
-		s += fmt.Sprintf("  ip:%v intf:%v adj:%v weight:%v\n", nh.Address, nh.Si.Name(m.v), nh.Adj, nh.Weight)
+		s += fmt.Sprintf("  ip:%v intf:%v adj:%v weight:%v\n", nh.Address, vnet.SiName{V: m.v, Si: nh.Si}, nh.Adj, nh.Weight)
 	}
 	return s
 }
@@ -559,9 +562,9 @@ func (m *Main) createMpAdj(given nextHopVec, af AdjacencyFinalizer) (madj *multi
 
 	nAdj, norm := resolved.normalizePow2(mp, &mp.cachedNextHopVec[2])
 
-	dbgvnet.Adj.Logf("given nhs:%v\n", given.ListNhs(m))
-	dbgvnet.Adj.Logf("resolved nhs:%v\n", resolved.ListNhs(m))
-	dbgvnet.Adj.Logf("normalized nhs:%v\n", norm.ListNhs(m))
+	dbgvnet.Adj.Log("given nhs:", given.ListNhs(m))
+	dbgvnet.Adj.Log("resolved nhs:", resolved.ListNhs(m))
+	dbgvnet.Adj.Log("normalized nhs:", norm.ListNhs(m))
 
 	// Use given next hops to see if we've seen a block equivalent to this one before. (not really, norm is built from resolved)
 	i, ok := mp.nextHopHash.Get(norm)
@@ -569,7 +572,7 @@ func (m *Main) createMpAdj(given nextHopVec, af AdjacencyFinalizer) (madj *multi
 		ai := mp.nextHopHashValues[i].adj
 		madj = m.mpAdjForAdj(ai, false)
 		if madj != nil {
-			dbgvnet.Adj.Logf("reuse existing block, adj %v\n", madj.adj.String())
+			dbgvnet.Adj.Log("reuse existing block, adj", madj.adj)
 			if vnet.AdjDebug {
 				m.checkMpAdj(madj.adj)
 			}
@@ -622,7 +625,7 @@ func (m *Main) createMpAdj(given nextHopVec, af AdjacencyFinalizer) (madj *multi
 	}
 
 	m.CallAdjAddHooks(ai)
-	dbgvnet.Adj.Logf("create new block, adj %v\n", madj.adj.String())
+	dbgvnet.Adj.Log("create new block, adj", madj.adj)
 	if vnet.AdjDebug {
 		m.checkMpAdj(madj.adj)
 	}
@@ -646,6 +649,9 @@ func (m *Main) checkMpAdj(mpAdj Adj) {
 }
 
 func (nhs nextHopVec) ListNhs(m *Main) string {
+	if dbgvnet.Adj == 0 {
+		return "noop"
+	}
 	s := ""
 	for nhi := range nhs {
 		nh := &nhs[nhi]
@@ -679,7 +685,7 @@ func (m *adjacencyMain) mpAdjForAdj(a Adj, create bool) (ma *multipathAdjacency)
 		return
 	}
 	if int(a) >= len(m.adjacencyHeap.elts) {
-		fmt.Printf("adjacency.go mpAdjForAdj: index out of range adj %v\n", a.String())
+		fmt.Print("adjacency.go mpAdjForAdj: index out of range adj", a)
 		return
 	}
 	adj := &m.adjacencyHeap.elts[a]
@@ -771,15 +777,14 @@ func (m *Main) AddNextHopsAdj(nhs NextHopVec) (newAdj Adj, ok bool) {
 					}
 				}
 				if !found {
-					dbgvnet.Adj.Logf("DEBUG DEBUG %v adj %v in newAdjs is not in requested nexthops", adjs[ai].String(m), nnh.Adj)
 					failed = true
 				}
 				ai += Adj(nnh.Weight)
 			}
 			if failed {
 				dbgvnet.Adj.Log("DEBUG DEBUG requested and new nexthops don't match")
-				dbgvnet.Adj.Logf("DEBUG DEBUG requested:\n%v", nhs.ListNhs(m))
-				dbgvnet.Adj.Logf("DEBUG DEBUG new: %v\n", new_nhs.ListNhs(m))
+				dbgvnet.Adj.Log("DEBUG DEBUG requested:", nhs.ListNhs(m))
+				dbgvnet.Adj.Log("DEBUG DEBUG new:", new_nhs.ListNhs(m))
 			}
 
 		}
@@ -850,7 +855,7 @@ func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWe
 	newNhs := mm.cachedNextHopVec[0]
 	newAdj = AdjNil
 	if isDel {
-		dbgvnet.Adj.Logf("delete adj %v from %v oldNhs:%v ... \n", nextHopAdj.String(), oldAdj, nhs.ListNhs(m))
+		dbgvnet.Adj.Logf("delete adj %v from %v oldNhs:%v ... \n", nextHopAdj, oldAdj, nhs.ListNhs(m))
 		// Delete next hop at previously found index.
 		if nhi > 0 {
 			copy(newNhs[:nhi], nhs[:nhi])
@@ -864,7 +869,7 @@ func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWe
 		if nhi < nnh && nhs[nhi].Weight == nextHopWeight {
 			newAdj = oldAdj
 			ok = true
-			dbgvnet.Adj.Logf("add adj %v to %v, same nh and weight, no change\n", nextHopAdj.String(), oldAdj.String())
+			dbgvnet.Adj.Logf("add adj %v to %v, same nh and weight, no change\n", nextHopAdj, oldAdj)
 			return
 		}
 
@@ -899,7 +904,7 @@ func (m *Main) AddDelNextHop(oldAdj Adj, nextHopAdj Adj, nextHopWeight NextHopWe
 		resolved_nhs := m.NextHopsForAdj(newAdj)
 		nhAdjs_string += fmt.Sprintf("resolved adj: %v", resolved_nhs.ListNhs(m))
 	}
-	dbgvnet.Adj.Logf("%v adj %v to/from %v, newAdj %v %v\n", vnet.IsDel(isDel), nextHopAdj.String(), oldAdj.String(), newAdj.String(), nhAdjs_string)
+	dbgvnet.Adj.Logf("%v adj %v to/from %v, newAdj %v %v\n", vnet.IsDel(isDel), nextHopAdj, oldAdj, newAdj, nhAdjs_string)
 	if isDel && !ok {
 		dbgvnet.Adj.Logf("delete failed new_is_nil=%v", new == nil)
 	}
@@ -945,10 +950,9 @@ func (m *Main) IsAdjFree(a Adj) bool {
 
 func (m *Main) FreeAdj(a Adj) bool {
 	// FreeAdj just puts index back into adjacencyHeap
-	// If a is a mpAdj, should call free(m *Main) which includes cleaning up all the other stuff associated with a
-
-	// by the time FreeAdj is call, a should have been poisoned, and IsMpAdj should be false
-	dbgvnet.Adj.Logf("%v IsMpAdj %v\n", a.String(), m.IsMpAdj(a))
+	// If a is a mpAdj, should call free(m *Main) instead which includes cleaning up all the other stuff associated with a
+	// by the time FreeAdj is called, a should have been poisoned, and IsMpAdj should be false
+	dbgvnet.Adj.Logf("%v IsMpAdj %v\n", a, m.IsMpAdj(a))
 
 	if !m.adjacencyHeap.IsFree(uint(a)) {
 		m.adjacencyHeap.Put(uint(a))

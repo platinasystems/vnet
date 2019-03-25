@@ -852,7 +852,7 @@ func (m *net_namespace_main) addDelVlan(intf *net_namespace_interface, supifinde
 
 	v := ns.m.m.v
 	if isDel {
-		dbgvnet.Adj.Logf("ns %v delete si %v", ns.name, intf.si.Name(v))
+		dbgvnet.Adj.Logf("ns %v delete si %v", ns.name, vnet.SiName{V: v, Si: intf.si})
 		v.DelSwIf(intf.si)
 	} else {
 		id := vnet.Uint16(vlanid)
@@ -868,7 +868,7 @@ func (m *net_namespace_main) addDelVlan(intf *net_namespace_interface, supifinde
 		si := ns.m.m.v.NewSwSubInterface(hw.Si(), vnet.IfId(eid), intf.name)
 
 		dbgvnet.Adj.Logf("ns %v add sup_si %v sup_si.IsSwSub %v, IfId %v, vlanId %v, si %v",
-			ns.name, sup_si, sup_si.IsSwSubInterface(v), vnet.IfId(eid), vlanid, si.Name(v))
+			ns.name, sup_si, sup_si.IsSwSubInterface(v), vnet.IfId(eid), vlanid, vnet.SiName{V: v, Si: si})
 		m.set_si(intf, si)
 	}
 	return

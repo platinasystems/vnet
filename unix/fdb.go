@@ -386,11 +386,11 @@ func ProcessIpNeighbor(msg *xeth.MsgNeighUpdate, v *vnet.Vnet) (err error) {
 	// Don't enable bridge feature yet
 	// FIXME, REMOVEME if enabling bridge
 	if !AllowBridge && si.Kind(v) == vnet.SwBridgeInterface {
-		dbgfdb.Neigh.Log("Ignore, for now,  bridge neighbor for ", si.Name(v), "in", ns.name)
+		dbgfdb.Neigh.Log("Ignore, for now,  bridge neighbor for ", vnet.SiName{V: v, Si: si}, "in", ns.name)
 		return
 	}
 
-	dbgfdb.Neigh.Logf("msg.Dst %v ip %v %v\n", msg.Dst, addr.String(), si.Name(v))
+	dbgfdb.Neigh.Logf("msg.Dst %v ip %v %v\n", msg.Dst, addr, vnet.SiName{V: v, Si: si})
 	nbr := ethernet.IpNeighbor{
 		Si:       si,
 		Ethernet: ethernet.Address(msg.Lladdr),
@@ -441,14 +441,14 @@ func ProcessZeroGw(msg *xeth.MsgFibentry, v *vnet.Vnet, ns *net_namespace, isDel
 		if ok {
 			m4 := ip4.GetMain(v)
 			if isLocal {
-				dbgfdb.Fib.Log(vnet.IsDel(isDel).String(), "local", msg.Prefix(), "ifindex", xethNhs[0].Ifindex, "si", si, si.Name(v), si.Kind(v), si.GetType(v))
+				dbgfdb.Fib.Log(vnet.IsDel(isDel).String(), "local", msg.Prefix(), "ifindex", xethNhs[0].Ifindex, "si", si, vnet.SiName{V: v, Si: si}, si.Kind(v), si.GetType(v))
 				m4.AddDelInterfaceAddressRoute(msg.Prefix(), si, ip4.LOCAL, isDel)
 			} else if isMainUc {
-				dbgfdb.Fib.Log(vnet.IsDel(isDel).String(), "main", msg.Prefix(), "ifindex", xethNhs[0].Ifindex, "si", si, si.Name(v), si.Kind(v), si.GetType(v))
+				dbgfdb.Fib.Log(vnet.IsDel(isDel).String(), "main", msg.Prefix(), "ifindex", xethNhs[0].Ifindex, "si", si, vnet.SiName{V: v, Si: si}, si.Kind(v), si.GetType(v))
 				m4.AddDelInterfaceAddressRoute(msg.Prefix(), si, ip4.GLEAN, isDel)
 			} else {
 				dbgfdb.Fib.Log(vnet.IsDel(isDel).String(),
-					"neither local nor main", msg.Prefix(), si.Name(v))
+					"neither local nor main", msg.Prefix(), vnet.SiName{V: v, Si: si})
 			}
 		}
 	} else {

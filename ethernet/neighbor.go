@@ -81,11 +81,11 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 			return
 		}
 		dbgvnet.Adj.Logf("rewrite br %v stag %v prefix %v, si %v ctag %v",
-			n.Si.Name(m.v), br.port.Stag, n.Ip, rwSi, ctag)
+			vnet.SiName{V: m.v, Si: n.Si}, br.port.Stag, &n.Ip, rwSi, ctag)
 	} else {
 		rwSi = n.Si
 		dbgvnet.Adj.Logf("rewrite %v prefix %v",
-			n.Si.Name(m.v), n.Ip)
+			vnet.SiName{V: m.v, Si: n.Si}, &n.Ip)
 	}
 
 	var (
@@ -96,7 +96,7 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 	k.Si, k.Ip = rwSi, n.Ip.String()
 	if i, ok = nf.indexByAddress[k]; !ok {
 		if isDel {
-			dbgvnet.Adj.Logf("INFO delete unknown neighbor %v %v", rwSi.Name(m.v), n.Ip.String())
+			dbgvnet.Adj.Logf("INFO delete unknown neighbor %v %v", vnet.SiName{V: m.v, Si: rwSi}, &n.Ip)
 			err = ErrDelUnknownNeighbor
 			return
 		}
@@ -124,7 +124,7 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 	if isDel {
 		if len(as) > 0 {
 			dbgvnet.Adj.Logf("call AddDelRoute to delete %v adj %v from %v",
-				prefix.String(), ai.String(), rwSi.Name(m.v))
+				prefix.String(), ai.String(), vnet.SiName{V: m.v, Si: rwSi})
 			if _, err = im.AddDelRoute(&prefix, im.FibIndexForSi(rwSi), ai, isDel); err != nil {
 				return
 			}
@@ -146,7 +146,7 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 		hw := m.v.SupHwIf(sw)
 		if hw == nil {
 			dbgvnet.Adj.Logf("rewrite got nil for SupHwIf; si %v, %v, kind %v, sup_si %v",
-				rwSi, rwSi.Name(m.v), rwSi.Kind(m.v).String(), m.v.SupSi(rwSi))
+				rwSi, vnet.SiName{V: m.v, Si: rwSi}, rwSi.Kind(m.v).String(), m.v.SupSi(rwSi))
 			return
 		}
 		rw.Stag = stag
@@ -164,7 +164,7 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 			is_new_adj,
 			rwSi.Kind(m.v),
 			rw.Si,
-			rwSi.Name(m.v),
+			vnet.SiName{V: m.v, Si: rwSi},
 			prefix.String(),
 		)
 
@@ -191,7 +191,7 @@ func (m *ipNeighborMain) AddDelIpNeighbor(im *ip.Main, n *IpNeighbor, isDel bool
 func (m *ipNeighborMain) delKey(nf *ipNeighborFamily, k *ipNeighborKey) (err error) {
 	ip := net.ParseIP(k.Ip)
 	if ip == nil {
-		fmt.Printf("DEBUG delKey invalid key %v {%v %v}\n", k, k.Ip, k.Si.Name(m.v))
+		fmt.Printf("DEBUG delKey invalid key %v {%v %v}\n", k, k.Ip, vnet.SiName{V: m.v, Si: k.Si})
 		//panic(err)
 	}
 	n := IpNeighbor{
@@ -199,7 +199,7 @@ func (m *ipNeighborMain) delKey(nf *ipNeighborFamily, k *ipNeighborKey) (err err
 		Si: k.Si,
 	}
 	const isDel = true
-	dbgvnet.Adj.Logf("INFO delete neighbor %v %v from swIf delete\n", n.Si.Name(m.v), n.Ip.String())
+	dbgvnet.Adj.Logf("INFO delete neighbor %v %v from swIf delete\n", vnet.SiName{V: m.v, Si: n.Si}, &n.Ip)
 	_, err = m.AddDelIpNeighbor(nf.m, &n, isDel)
 	return
 }

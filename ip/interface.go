@@ -31,11 +31,6 @@ type IfAddress struct {
 	next, prev IfAddr
 }
 
-func (i IfAddr) String(m *Main) string {
-	a := m.GetIfAddr(i)
-	return a.Si.Name(m.v)
-}
-
 //go:generate gentemplate -d Package=ip -id ifaddress -d PoolType=ifAddressPool -d Type=IfAddress -d Data=ifAddrs github.com/platinasystems/elib/pool.tmpl
 
 type ifAddrMapKey struct {
@@ -61,7 +56,7 @@ func (m *Main) swIfAddDel(v *vnet.Vnet, si vnet.Si, isDel bool) (err error) {
 			a := m.GetIfAddr(ai)
 			k := makeIfAddrMapKey(a.Prefix.IP, m.FibIndexForSi(si))
 			delete(m.addrMap, k)
-			dbgvnet.Adj.Logf("INFO delete IfAddr %v %v from swIf delete\n", a.Prefix.String(), si.Name(v))
+			dbgvnet.Adj.Logf("INFO delete IfAddr %v %v from swIf delete\n", &a.Prefix, vnet.SiName{V: v, Si: si})
 			m.ifAddressPool.PutIndex(uint(ai))
 			ai = a.next
 		}
@@ -137,7 +132,7 @@ func (m *Main) AddDelInterfaceAddress(si vnet.Si, p *net.IPNet, isDel bool) (ai 
 
 	if isDel {
 		if a == nil {
-			err = fmt.Errorf("%s: address %s not found", si.Name(m.v), p.String())
+			err = fmt.Errorf("%s: address %s not found", vnet.SiName{V: m.v, Si: si}, &p)
 			return
 		}
 		if a.prev != IfAddrNil {
