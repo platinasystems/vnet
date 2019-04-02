@@ -1098,7 +1098,7 @@ func (m *Main) addDelRoute(p *net.IPNet, fi ip.FibIndex, adj ip.Adj, isDel bool)
 		}
 		return
 	}
-	if adj == ip.AdjPunt {
+	if adj == ip.AdjPunt || adj == ip.AdjDrop {
 		r, found = f.punt.getInstalled(p)
 		if isDel && found {
 			f.delFib(m, r)

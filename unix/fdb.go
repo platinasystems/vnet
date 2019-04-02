@@ -464,7 +464,11 @@ func ProcessZeroGw(msg *xeth.MsgFibentry, v *vnet.Vnet, ns *net_namespace, isDel
 		if addr[0] == 127 {
 			return
 		}
-		m4.AddDelRoute(in, ns.fibIndexForNamespace(), ip.AdjPunt, isDel)
+		adj := ip.AdjPunt
+		if xethNhs[0].Ifindex == 0 {
+			adj = ip.AdjDrop
+		}
+		m4.AddDelRoute(in, ns.fibIndexForNamespace(), adj, isDel)
 	}
 	return
 }
@@ -502,7 +506,11 @@ func ProcessFibEntry(msg *xeth.MsgFibentry, v *vnet.Vnet) (err error) {
 		} else {
 			dbgfdb.Fib.Log(nil, "ignore", rtn, "table", rtt,
 				"in", netns)
-			return
+			if msg.Type == xeth.RTN_BLACKHOLE {
+				dbgfdb.Fib.Log("blackhole")
+			} else {
+				return
+			}
 		}
 	} else {
 		dbgfdb.Fib.Log(rtn, "table", rtt, msg.Prefix(), "in", netns)
