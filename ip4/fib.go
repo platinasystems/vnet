@@ -139,9 +139,12 @@ func FromIp4Prefix(i *ip.Prefix) (p Prefix) {
 
 type RouteType uint8
 
+// this list of const is in order of perference for installing route
 const (
+	// drops at hardware (blackhole)
+	DROP RouteType = iota
 	// neighbor
-	CONN RouteType = iota
+	CONN
 	// has via next hop(s)
 	VIA
 	// glean
@@ -164,6 +167,8 @@ func (t RouteType) String() string {
 		return "local"
 	case PUNT:
 		return "punt"
+	case DROP:
+		return "drop"
 	default:
 		return "unspecified"
 
@@ -488,8 +493,9 @@ type Fib struct {
 
 	// routes and their nexthops
 	// these can have more than 1 entry per prefix
-	routeFib           MapFib //i.e. via nexthop
-	local, punt, glean MapFib
+	routeFib     MapFib //i.e. via nexthop
+	local, glean MapFib
+	punt, drop   MapFib //punt goes to linux, drop drops at hardware
 }
 
 //go:generate gentemplate -d Package=ip4 -id Fib -d VecType=FibVec -d Type=*Fib github.com/platinasystems/elib/vec.tmpl
@@ -526,27 +532,30 @@ func (f *Fib) addFib(m *Main, r *FibResult) (installed bool) {
 	}
 
 	// something else had previously been installed
+	// in order of preference from DROP to PUNT; install only if oldr is not more preferred
 	switch r.Type {
+	case DROP:
+		// aways install
 	case CONN:
-		// always install
+		if oldr.Type < CONN {
+			return
+		}
 	case VIA:
-		if oldr.Type == CONN {
-			// connected route is preferred, don't install
-			// FIXME, as is will replace any previous VIA routes with same prefix
+		if oldr.Type < VIA {
 			return
 		}
 	case GLEAN:
-		if oldr.Type == CONN || oldr.Type == VIA {
-			// connected and via routes are preferred, don't install
+		if oldr.Type < GLEAN {
 			return
 		}
 	case LOCAL:
-		if oldr.Type == CONN || oldr.Type == VIA || oldr.Type == GLEAN {
+		if oldr.Type < LOCAL {
 			return
 		}
 	case PUNT:
-		// least preferred
-		return
+		if oldr.Type < PUNT {
+			return
+		}
 	default:
 		dbgvnet.Adj.Log("DEBUG unspecifed route type for prefix", &r.Prefix)
 		return
@@ -581,7 +590,8 @@ func (f *Fib) delFib(m *Main, r *FibResult) {
 		found bool
 	)
 	checkAdjValid := true
-	if newr, found = f.reachable.getFirstUninstalled(&p, checkAdjValid); found {
+	if newr, found = f.drop.getFirstUninstalled(&p, checkAdjValid); found {
+	} else if newr, found = f.reachable.getFirstUninstalled(&p, checkAdjValid); found {
 	} else if newr, found = f.routeFib.getFirstUninstalled(&p, checkAdjValid); found {
 	} else if newr, found = f.glean.getFirstUninstalled(&p, checkAdjValid); found {
 	} else if newr, found = f.local.getFirstUninstalled(&p, checkAdjValid); found {
@@ -805,6 +815,10 @@ func (f *Fib) addDelReachable(m *Main, r *FibResult, isDel bool) {
 }
 
 func (f *Fib) GetInstalled(p *net.IPNet) (result *FibResult, ok bool) {
+	// check drop first
+	if result, ok = f.drop.getInstalled(p); ok {
+		return
+	}
 	// check reachable first
 	if result, ok = f.reachable.getInstalled(p); ok {
 		return
@@ -919,8 +933,7 @@ func (f *Fib) GetGlean(p *net.IPNet, si vnet.Si) (a ip.Adj, result *FibResult, o
 	return f.glean.GetBySi(p, si)
 }
 
-// adj is always AdjPunt for punt; just return ok if found
-func (f *Fib) GetPunt(p *net.IPNet) (ok bool) {
+func (f *Fib) GetPunt(p *net.IPNet) (result *FibResult, ok bool) {
 	var (
 		rs FibResultVec
 	)
@@ -929,6 +942,24 @@ func (f *Fib) GetPunt(p *net.IPNet) (ok bool) {
 	if rs, ok = f.punt[l][k]; ok {
 		if len(rs) > 0 {
 			ok = true
+			// they all have same prefix and adjPunt so just return the first one
+			result = &f.punt[l][k][0]
+		}
+	}
+	return
+}
+
+func (f *Fib) GetDrop(p *net.IPNet) (result *FibResult, ok bool) {
+	var (
+		rs FibResultVec
+	)
+	l, k := makeKey(p)
+	f.drop.validateLen(l)
+	if rs, ok = f.drop[l][k]; ok {
+		if len(rs) > 0 {
+			ok = true
+			// they all have same prefix and adjDrop so just return the first one
+			result = &f.drop[l][k][0]
 		}
 	}
 	return
@@ -1066,7 +1097,9 @@ func (m *Main) addDelRoute(p *net.IPNet, fi ip.FibIndex, adj ip.Adj, isDel bool)
 		dbgvnet.Adj.Logf("found %v, adj %v->%v",
 			found, oldAdj, adj)
 		if isDel && found {
-			f.delFib(m, r)
+			if r.Installed {
+				f.delFib(m, r)
+			}
 			f.addDelReachable(m, r, isDel)
 			oldAdj, ok = f.reachable.UnsetConn(p, si)
 			// neighbor.go takes care of DelAdj so no need to do so here on delete
@@ -1098,10 +1131,30 @@ func (m *Main) addDelRoute(p *net.IPNet, fi ip.FibIndex, adj ip.Adj, isDel bool)
 		}
 		return
 	}
-	if adj == ip.AdjPunt || adj == ip.AdjDrop {
-		r, found = f.punt.getInstalled(p)
+	if adj == ip.AdjDrop {
+		r, found = f.GetDrop(p)
 		if isDel && found {
-			f.delFib(m, r)
+			if r.Installed {
+				f.delFib(m, r)
+			}
+			oldAdj, ok = f.drop.Unset(p, ip.NextHopVec{})
+		}
+		if !isDel {
+			oldAdj, r, ok = f.drop.Set(m, p, adj, ip.NextHopVec{}, DROP)
+			f.addFib(m, r)
+		}
+		if !ok {
+			dbgvnet.Adj.Log("DEBUG", vnet.IsDel(isDel), p, "drop not ok")
+			err = fmt.Errorf("%v %v drop not ok\n", vnet.IsDel(isDel), &p)
+		}
+		return
+	}
+	if adj == ip.AdjPunt {
+		r, found = f.GetPunt(p)
+		if isDel && found {
+			if r.Installed {
+				f.delFib(m, r)
+			}
 			oldAdj, ok = f.punt.Unset(p, ip.NextHopVec{})
 		}
 		if !isDel {
@@ -1577,6 +1630,7 @@ func (m *Main) swIfAdminUpDown(v *vnet.Vnet, si vnet.Si, isUp bool) (err error) 
 
 func (f *Fib) Reset() {
 	dbgvnet.Adj.Logf("clear out all fibs in %v\n", f.index)
+	f.drop.reset()
 	f.reachable.reset()
 	f.unreachable.reset()
 	f.routeFib.reset()
@@ -1596,6 +1650,8 @@ func (m *Main) FibReset(fi ip.FibIndex) {
 		}
 	}
 
+	dbgvnet.Adj.Logf("uninstall_all %v drop\n", f.Name)
+	f.drop.uninstall_all(f, m)
 	dbgvnet.Adj.Logf("uninstall_all %v reachable\n", f.Name)
 	f.reachable.uninstall_all(f, m)
 	dbgvnet.Adj.Logf("uninstall_all %v unreachable\n", f.Name)
