@@ -47,7 +47,7 @@ func (r *Rewrite) Lines(v *Vnet) (lines []string) {
 	return
 }
 
-func (r *Rewrite) DataDump() (dump string) {
+func (r *Rewrite) String() (dump string) {
 	dump = fmt.Sprintf("stag %v, len %v, data %x", r.Stag, r.dataLen, r.data)
 	return
 }
