@@ -87,6 +87,10 @@ func (m *Main) showIpFib(c cli.Commander, w cli.Writer, in *cli.Input) (err erro
 			rt := route{prefixFibIndex: ip.FibIndex(fi), prefixFibName: t, prefix: p, r: r}
 			rs = append(rs, rt)
 		})
+		fib.drop.foreach(func(p net.IPNet, r FibResult) {
+			rt := route{prefixFibIndex: ip.FibIndex(fi), prefixFibName: t, prefix: p, r: r}
+			rs = append(rs, rt)
+		})
 	}
 	sort.Slice(rs, func(i, j int) bool {
 		if cmp := int(rs[i].prefixFibIndex) - int(rs[j].prefixFibIndex); cmp != 0 {
