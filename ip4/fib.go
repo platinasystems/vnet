@@ -466,8 +466,8 @@ func (m *MapFib) uninstall_all(f *Fib, ma *Main) {
 	}
 }
 
-// fib local has adjacency in its nh that are not automatically deleted by delFib
-func (m *MapFib) uninstall_local_all(f *Fib, ma *Main) {
+// fib local and glean has adjacency in its nh that are not automatically deleted by delFib
+func (m *MapFib) uninstallAndDelAdjAll(f *Fib, ma *Main) {
 	for i := range m {
 		for rsi, _ := range m[i] {
 			for ri, _ := range m[i][rsi] {
@@ -1659,9 +1659,9 @@ func (m *Main) FibReset(fi ip.FibIndex) {
 	dbgvnet.Adj.Logf("uninstall_all %v via routes\n", f.Name)
 	f.routeFib.uninstall_all(f, m)
 	dbgvnet.Adj.Logf("uninstall_all %v local\n", f.Name)
-	f.local.uninstall_local_all(f, m)
+	f.local.uninstallAndDelAdjAll(f, m)
 	dbgvnet.Adj.Logf("uninstall_all %v glean\n", f.Name)
-	f.glean.uninstall_all(f, m)
+	f.glean.uninstallAndDelAdjAll(f, m)
 	dbgvnet.Adj.Logf("uninstall_all %v punt\n", f.Name)
 	f.punt.uninstall_all(f, m)
 
