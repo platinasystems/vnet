@@ -13,6 +13,8 @@ github.com/platinasystems/elib v1.3.0 h1:zzANIxddy26CZ9QCQdgnTj55jKBba7slQFJDLaa
 github.com/platinasystems/elib v1.3.0/go.mod h1:XZy8etdf41RtMxmxEYArLL7T6QEJ5MPAIeHDqXtPCUU=
 github.com/platinasystems/elib v1.3.1 h1:01WW2Ouv7N7PJ/YhHzFp5H9daMugVTnJZeP8ux4M0u8=
 github.com/platinasystems/elib v1.3.1/go.mod h1:XZy8etdf41RtMxmxEYArLL7T6QEJ5MPAIeHDqXtPCUU=
+github.com/platinasystems/elib v1.3.2 h1:MwlMd+ik1X0KVZXqIk9iPqH+Dw9WamxLFHZp89wtHEI=
+github.com/platinasystems/elib v1.3.2/go.mod h1:XZy8etdf41RtMxmxEYArLL7T6QEJ5MPAIeHDqXtPCUU=
 github.com/platinasystems/i2c v1.1.0 h1:34ewZSwxMvtD5kYjJAhNtwmEsCFjiQt+o6OJ62Ni2ug=
 github.com/platinasystems/i2c v1.1.0/go.mod h1:Yj5hRxt+HXbW1rXv9aTtxUNZsegDjeWerUPY5BIjDVM=
 github.com/platinasystems/indent v1.1.0 h1:VmMAqlCw1MlWgQcygXqkLsyE0Q8atBCBX+zwWVPM8Fw=
