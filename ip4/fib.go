@@ -143,6 +143,8 @@ type RouteType uint8
 const (
 	// drops at hardware (blackhole)
 	DROP RouteType = iota
+	// punts to Linux
+	PUNT
 	// neighbor
 	CONN
 	// has via next hop(s)
@@ -151,8 +153,6 @@ const (
 	GLEAN
 	// interface addr of vnet recognized interface
 	LOCAL
-	// punts to Linux
-	PUNT
 )
 
 func (t RouteType) String() string {
@@ -532,10 +532,14 @@ func (f *Fib) addFib(m *Main, r *FibResult) (installed bool) {
 	}
 
 	// something else had previously been installed
-	// in order of preference from DROP to PUNT; install only if oldr is not more preferred
+	// install only if oldr is not more preferred
 	switch r.Type {
 	case DROP:
 		// aways install
+	case PUNT:
+		if oldr.Type < PUNT {
+			return
+		}
 	case CONN:
 		if oldr.Type < CONN {
 			return
@@ -550,10 +554,6 @@ func (f *Fib) addFib(m *Main, r *FibResult) (installed bool) {
 		}
 	case LOCAL:
 		if oldr.Type < LOCAL {
-			return
-		}
-	case PUNT:
-		if oldr.Type < PUNT {
 			return
 		}
 	default:
@@ -591,11 +591,11 @@ func (f *Fib) delFib(m *Main, r *FibResult) {
 	)
 	checkAdjValid := true
 	if newr, found = f.drop.getFirstUninstalled(&p, checkAdjValid); found {
+	} else if newr, found = f.punt.getFirstUninstalled(&p, checkAdjValid); found {
 	} else if newr, found = f.reachable.getFirstUninstalled(&p, checkAdjValid); found {
 	} else if newr, found = f.routeFib.getFirstUninstalled(&p, checkAdjValid); found {
 	} else if newr, found = f.glean.getFirstUninstalled(&p, checkAdjValid); found {
 	} else if newr, found = f.local.getFirstUninstalled(&p, checkAdjValid); found {
-	} else if newr, found = f.punt.getFirstUninstalled(&p, checkAdjValid); found {
 	}
 
 	// uninstall old
