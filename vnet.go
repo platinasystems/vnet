@@ -6,6 +6,7 @@ package vnet
 
 import (
 	"net"
+	"sync"
 
 	"github.com/platinasystems/elib"
 	"github.com/platinasystems/elib/cpu"
@@ -56,89 +57,146 @@ type PortEntry struct {
 	IPNets       []*net.IPNet
 }
 
-var Ports map[string]*PortEntry       // FIXME ifname of bridge need not be unique across netns
-var PortsByIndex map[int32]*PortEntry // FIXME - driver only sends platina-mk1 type
-var SiByIfindex map[int32]Si          // FIXME ifindex is not unique across netns, also impacts PortsByIndex[]
+//var Ports map[string]*PortEntry       // FIXME ifname of bridge need not be unique across netns
+//var PortsByIndex map[int32]*PortEntry // FIXME - driver only sends platina-mk1 type
+//var SiByIfindex map[int32]Si          // FIXME ifindex is not unique across netns, also impacts PortsByIndex[]
+
+type PortsMap struct {
+	sync.Map             // indexed by ifname, value is *PortEntry
+	nameByIndex sync.Map //indexed by ifindex, value is ifname
+	siByIndex   sync.Map // indexed by ifindex, value is vnet.Si
+}
+
+var Ports PortsMap
 
 type BridgeNotifierFn func()
 
-func (v *Vnet) SetSiByIfindex(ifindex uint32, si Si) {
-	if SiByIfindex == nil {
-		SiByIfindex = make(map[int32]Si)
-	}
-	SiByIfindex[int32(ifindex)] = si
+func (p *PortsMap) SetSiByIfindex(ifindex int32, si Si) {
+	p.siByIndex.Store(ifindex, si)
 }
 
 // port or bridge member
-func SetPort(ifname string) *PortEntry {
-	if Ports == nil {
-		Ports = make(map[string]*PortEntry)
-	}
-	entry, found := Ports[ifname]
+func (p *PortsMap) SetPort(ifname string) (pe *PortEntry) {
+	entry, found := p.Load(ifname)
 	if !found {
-		entry = new(PortEntry)
-		entry.StationAddr = make(net.HardwareAddr, 6)
-		Ports[ifname] = entry
+		pe = new(PortEntry)
+		pe.StationAddr = make(net.HardwareAddr, 6)
+	} else {
+		pe = entry.(*PortEntry)
 	}
-	entry.Ifname = ifname
-	return entry
+	pe.Ifname = ifname
+	p.Store(ifname, pe)
+	return
 }
 
-func SetPortByIndex(ifindex int32, ifname string) *PortEntry {
-	if PortsByIndex == nil {
-		PortsByIndex = make(map[int32]*PortEntry)
+func (p *PortsMap) SetPortByIndex(ifindex int32, ifname string) *PortEntry {
+	p.nameByIndex.LoadOrStore(ifindex, ifname)
+	if entry, found := p.Load(ifname); found {
+		return entry.(*PortEntry)
 	}
-	PortsByIndex[ifindex] = Ports[ifname]
-	return PortsByIndex[ifindex]
+	return nil
 }
 
-func GetPortByIndex(ifindex int32) (entry *PortEntry) {
-	if PortsByIndex == nil {
-		return nil
+func (p *PortsMap) GetPortByName(ifname string) (*PortEntry, bool) {
+	if entry, found := p.Load(ifname); found {
+		return entry.(*PortEntry), found
 	}
-	entry, _ = PortsByIndex[ifindex]
-	return entry
+	return nil, false
 }
 
-func UnsetPort(ifname string) {
+func (p *PortsMap) GetPortByIndex(ifindex int32) (*PortEntry, bool) {
+	if ifname, ok := p.nameByIndex.Load(ifindex); ok {
+		if entry, found := p.Load(ifname); found {
+			return entry.(*PortEntry), found
+		}
+	}
+	return nil, false
+}
+
+func (p *PortsMap) GetSiByIndex(ifindex int32) (Si, bool) {
+	if entry, found := p.siByIndex.Load(ifindex); found {
+		return entry.(Si), found
+	}
+	return SiNil, false
+}
+
+func (p *PortsMap) GetNameByIndex(ifindex int32) (string, bool) {
+	if entry, found := p.nameByIndex.Load(ifindex); found {
+		return entry.(string), found
+	}
+	return "", false
+}
+
+func (p *PortsMap) UnsetPort(ifname string) {
 	dbgvnet.Bridge.Log(ifname)
 
-	entry, found := Ports[ifname]
+	entry, found := p.Load(ifname)
+
 	if found {
+		pe := entry.(*PortEntry)
 		dbgvnet.Bridge.Logf("delete port %v ctag:%v stag:%v, ifindex %v",
-			ifname, entry.Ctag, entry.Stag, entry.Ifindex)
-		delete(SiByIfindex, entry.Ifindex)
-		delete(PortsByIndex, entry.Ifindex)
-		delete(Ports, ifname)
-		dbgvnet.Bridge.Logf("%+v", entry)
+			ifname, pe.Ctag, pe.Stag, pe.Ifindex)
+		p.nameByIndex.Delete(pe.Ifindex)
+		p.siByIndex.Delete(pe.Ifindex)
+		p.Delete(ifname)
 	} else {
 		dbgvnet.Bridge.Logf("delete port %v, not found", ifname)
 	}
 }
 
-func GetNumSubports(ifname string) (numSubports uint) {
+func (p *PortsMap) Foreach(f func(ifname string, pe *PortEntry)) {
+	p.Range(func(key, value interface{}) bool {
+		ifname := key.(string)
+		pe := value.(*PortEntry)
+		f(ifname, pe)
+		return true
+	})
+}
+
+func (p *PortsMap) ForeachNameByIndex(f func(ifindex int32, ifname string)) {
+	p.nameByIndex.Range(func(key, value interface{}) bool {
+		ifindex := key.(int32)
+		ifname := value.(string)
+		f(ifindex, ifname)
+		return true
+	})
+}
+
+func (p *PortsMap) ForeachSiByIndex(f func(ifindex int32, si Si)) {
+	p.siByIndex.Range(func(key, value interface{}) bool {
+		ifindex := key.(int32)
+		si := value.(Si)
+		f(ifindex, si)
+		return true
+	})
+}
+
+func (p *PortsMap) GetNumSubports(ifname string) (numSubports uint) {
 	numSubports = 0
-	entry, found := Ports[ifname]
+	entry, found := p.Load(ifname)
 	if !found {
 		return
 	}
-	portindex := entry.Portindex
-	for _, pe := range Ports {
+	portindex := entry.(*PortEntry).Portindex
+	p.Foreach(func(ifname string, pe *PortEntry) {
 		if pe.Devtype == xeth.XETH_DEVTYPE_XETH_PORT &&
 			pe.Portindex == int16(portindex) {
 			numSubports++
 		}
-	}
+	})
 	return
 }
 
-func IfName(portindex, subportindex int) (name string) {
+func (p *PortsMap) IfName(portindex, subportindex int) (name string) {
 	name = ""
-	for _, pe := range Ports {
+	p.Range(func(key, value interface{}) bool {
+		pe := value.(*PortEntry)
 		if int(pe.Portindex) == portindex && int(pe.Subportindex) == subportindex {
 			name = pe.Ifname
+			return false // sync.Map Range stopes after false
 		}
-	}
+		return true // sync.Map Range continues if true
+	})
 	return
 }
 

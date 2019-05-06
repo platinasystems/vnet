@@ -82,7 +82,12 @@ func (m *Main) showIpNeighbor(c cli.Commander, w cli.Writer, in *cli.Input) (err
 
 			ai := ip.AdjNil
 			ln := 0
-			if ai, as, ok = im.GetReachable(&prefix, n.Si); ok {
+			rwSi := n.Si
+			if n.Si.Kind(v) == vnet.SwBridgeInterface {
+				br := GetBridgeBySi(n.Si)
+				rwSi, _ = br.LookupSiCtag(n.Ethernet, v)
+			}
+			if ai, as, ok = im.GetReachable(&prefix, rwSi); ok {
 				for i := range as {
 					adj_lines = as[i].AdjLines(im)
 				}
@@ -93,7 +98,8 @@ func (m *Main) showIpNeighbor(c cli.Commander, w cli.Writer, in *cli.Input) (err
 				}
 				ln++
 			} else {
-				fmt.Fprintf(w, "%10v%20v dev %10v lladdr %v      adjacency %v:%v\n", ns, ipAddr, intf, lladdr, ai, "not found")
+				//fmt.Fprintf(w, "%10v%20v dev %10v lladdr %v      adjacency %v:%v\n", ns, ipAddr, intf, lladdr, ai, "not found")
+				fmt.Fprintf(w, "%10v%20v dev %10v lladdr %v      %v not found\n", ns, ipAddr, intf, lladdr, vnet.SiName{V: v, Si: rwSi})
 			}
 
 			if cf.detail {
@@ -120,7 +126,7 @@ func (m *Main) fdbBridgeShow(c cli.Commander, w cli.Writer, in *cli.Input) (err 
 		} else {
 			brmPerPort[bri.portIfindex] = 1
 		}
-		m := vnet.PortsByIndex[bri.memberIfindex]
+		m, _ := vnet.Ports.GetPortByIndex(bri.memberIfindex)
 		fmt.Fprintf(w, "%v %+v %+v\n", m.Ifname, brm, bri)
 	}
 	fmt.Fprintf(w, "\nbrmPerPort\n")
