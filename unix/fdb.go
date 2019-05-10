@@ -49,6 +49,14 @@ type fdbEvent struct {
 	evType  vnet.ActionType
 	NumMsgs int
 	Msgs    [MAXMSGSPEREVENT][]byte
+
+	sync.Mutex
+	currMsg currMsgType
+}
+
+type currMsgType struct {
+	id   int
+	kind xeth.Kind
 }
 
 type FdbMain struct {
@@ -72,7 +80,13 @@ func (m *FdbMain) newEvent() interface{} {
 
 func (m *FdbMain) GetEvent(evType vnet.ActionType) *fdbEvent {
 	v := m.eventPool.Get().(*fdbEvent)
-	*v = fdbEvent{fm: m, evType: evType}
+	*v = fdbEvent{
+		fm:      m,
+		evType:  evType,
+		NumMsgs: 0,
+		Msgs:    [MAXMSGSPEREVENT][]byte{},
+		currMsg: currMsgType{},
+	}
 	return v
 }
 
@@ -89,8 +103,14 @@ func (e *fdbEvent) put() {
 }
 
 func (e *fdbEvent) String() (s string) {
+	e.Lock()
+	defer e.Unlock()
+	s = "fdb msgs"
 	l := e.NumMsgs
-	s = fmt.Sprintf("fdb %d:", l)
+	if l > 0 {
+		s = fmt.Sprintf("fdb msg %v out of %v: %v",
+			e.currMsg.id, l, e.currMsg.kind)
+	}
 	return
 }
 
@@ -169,6 +189,9 @@ func (e *fdbEvent) EventAction() {
 		kind := xeth.KindOf(msg)
 		dbgfdb.XethMsg.Log("kind:", kind)
 		ptr := unsafe.Pointer(&msg[0])
+		e.Lock()
+		e.currMsg = currMsgType{id: i, kind: kind}
+		e.Unlock()
 		switch xeth.KindOf(msg) {
 		case xeth.XETH_MSG_KIND_NEIGH_UPDATE:
 			err = ProcessIpNeighbor((*xeth.MsgNeighUpdate)(ptr), vn)
@@ -533,7 +556,6 @@ func ProcessFibEntry(msg *xeth.MsgFibentry, v *vnet.Vnet) (err error) {
 	m4 := ip4.GetMain(v)
 
 	xethNhs := msg.NextHops()
-	dbgfdb.Fib.Logf("%v%v nexthops for %v\n%v", msg, len(nhs), netns, ns.ShowMsgNextHops(xethNhs))
 	// Check for dummy processing
 	if len(xethNhs) == 1 {
 		if addrIsZero(xethNhs[0].IP()) {
