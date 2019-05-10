@@ -475,9 +475,7 @@ func (h *HwIf) IsLinkUp() bool      { return h.linkUp }
 func (hi Hi) IsLinkUp(v *Vnet) bool { return v.HwIf(hi).IsLinkUp() }
 
 func (h *HwIf) SetLinkUp(v bool) (err error) {
-	if h.linkUp == v {
-		return
-	}
+	// always set; responsibility of caller or hooks to handle repeated set of same state
 	h.linkUp = v
 	vn := h.vnet
 	for i := range vn.hwIfLinkUpDownHooks.hooks {
