@@ -639,7 +639,6 @@ func (m *Main) checkMpAdj(mpAdj Adj) {
 	for nhi := range nhs {
 		nh := &nhs[nhi]
 		if m.IsMpAdj(nh.Adj) {
-			fmt.Printf("adjacency.go checkMpAdj: fail nhi %v of multipathAdj %v is also a multipath!\n", nh.Adj, mpAdj)
 			fail = true
 		}
 	}
@@ -961,10 +960,13 @@ func (m *Main) FreeAdj(a Adj) bool {
 }
 
 func (m *Main) DelAdj(a Adj) {
-	dbgvnet.Adj.Logf("%v IsMpAdj %v\n", a, m.IsMpAdj(a))
 	if ma := m.mpAdjForAdj(a, false); ma != nil {
-		// use free, which calls CallAdjDelHooks and cleans up rest of mpAdj
-		ma.free(m)
+		// Shouldn't be here; if mpAdj, then caller should have used free which deletes the adj and mpAdj
+		// However, handle it
+		dbgvnet.Adj.Logf("%v IsMpAdj %v\n", a, m.IsMpAdj(a))
+		if ma.isValid() {
+			ma.free(m)
+		}
 	} else {
 		m.PoisonAdj(a)
 		if ok := m.FreeAdj(a); ok {
@@ -1095,12 +1097,12 @@ func (ma *multipathAdjacency) free(m *Main) {
 
 	m.PoisonAdj(ma.adj)
 	m.FreeAdj(ma.adj)
+
+	poolIndex := ma.index
 	mm.freeNextHopBlock(&ma.givenNextHops)
 	mm.freeNextHopBlock(&ma.resolvedNextHops)
-
-	// Nothing to free since multipath adjacencies are indexed by adjacency index.
-
 	ma.invalidate()
+	mm.mpAdjPool.PutIndex(poolIndex)
 }
 
 func (m *adjacencyMain) validateCounter(a Adj) {

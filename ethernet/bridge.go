@@ -49,8 +49,9 @@ var bridgeByStag map[uint16]*bridgeEntry
 func (br *bridgeEntry) String() (dump string) {
 	var lrnPerIfindex map[int32]int
 
+	si, _ := vnet.Ports.GetSiByIndex(br.port.Ifindex)
 	dump = fmt.Sprintf("bridge %v, ifindex %v, si %v, stag %v, addr %v\n",
-		br.port.Ifname, br.port.Ifindex, vnet.SiByIfindex[br.port.Ifindex], br.port.Stag, br.port.StationAddr)
+		br.port.Ifname, br.port.Ifindex, si, br.port.Stag, br.port.StationAddr)
 	lrnPerIfindex = make(map[int32]int)
 	for _, ifindex := range br._macToIfindex {
 		prev, ok := lrnPerIfindex[ifindex]
@@ -60,7 +61,7 @@ func (br *bridgeEntry) String() (dump string) {
 		lrnPerIfindex[ifindex] = prev + 1
 	}
 	for ifindex, count := range lrnPerIfindex {
-		be := vnet.PortsByIndex[ifindex]
+		be, _ := vnet.Ports.GetPortByIndex(ifindex)
 		if be != nil {
 			dump += fmt.Sprintf("\t%v,", be.Ifname)
 		}
@@ -96,8 +97,8 @@ func (br *bridgeEntry) LookupSiCtag(da Address, v *vnet.Vnet) (si vnet.Si, ctag 
 	if fdbBri.memberIfindex == 0 {
 		si = vnet.SiNil
 	} else {
-		brm := vnet.PortsByIndex[fdbBri.memberIfindex]
-		si = vnet.SiByIfindex[fdbBri.memberIfindex]
+		brm, _ := vnet.Ports.GetPortByIndex(fdbBri.memberIfindex)
+		si, _ = vnet.Ports.GetSiByIndex(fdbBri.memberIfindex)
 		ctag = brm.Ctag
 		dbgvnet.Bridge.Logf("br stag %v, ctag %v, si %v, type %v",
 			brm.Stag, ctag, si, brm.Devtype)
@@ -132,7 +133,7 @@ func ProcessChangeUpper(msg *xeth.MsgChangeUpper, action vnet.ActionType, v *vne
 		return
 	}
 
-	portUpper := vnet.GetPortByIndex(msg.Upper) // port contained by bridge
+	portUpper, _ := vnet.Ports.GetPortByIndex(msg.Upper) // port contained by bridge
 	if portUpper == nil {
 		err = dbgvnet.Bridge.Logf("upper %v, port not found", msg.Upper)
 		return
@@ -146,7 +147,7 @@ func ProcessChangeUpper(msg *xeth.MsgChangeUpper, action vnet.ActionType, v *vne
 		return
 	}
 
-	portLower := vnet.GetPortByIndex(msg.Lower)
+	portLower, _ := vnet.Ports.GetPortByIndex(msg.Lower)
 	if portLower == nil {
 		err = dbgvnet.Bridge.Logf("lower %v, not found", msg.Lower)
 		return
@@ -167,7 +168,8 @@ func ProcessChangeUpper(msg *xeth.MsgChangeUpper, action vnet.ActionType, v *vne
 				dbgvnet.Bridge.Logf("brm del %+v, %+v, br.stag:%v, portvid:%v",
 					fdbBrm, fdbBri, brUpper.port.Stag, portLower.PortVid)
 				delete(fdbBrmToBri, fdbBrm)
-				v.BridgeMemberAddDelHook(fdbBrm.stag, vnet.SiByIfindex[fdbBri.memberIfindex],
+				si, _ := vnet.Ports.GetSiByIndex(fdbBri.memberIfindex)
+				v.BridgeMemberAddDelHook(fdbBrm.stag, si,
 					fdbBrm.pipe_port, portLower.Ctag, false, numBrmOnPort(fdbBri.portIfindex))
 				portLower.Stag = 0
 				portLower.Devtype = xeth.XETH_DEVTYPE_LINUX_VLAN
@@ -195,7 +197,8 @@ func ProcessChangeUpper(msg *xeth.MsgChangeUpper, action vnet.ActionType, v *vne
 		// indexed by portvid/stag in map
 		portLower.Stag = brUpper.port.Stag
 
-		v.BridgeMemberAddDelHook(fdbBrm.stag, vnet.SiByIfindex[fdbBri.memberIfindex],
+		si, _ := vnet.Ports.GetSiByIndex(fdbBri.memberIfindex)
+		v.BridgeMemberAddDelHook(fdbBrm.stag, si,
 			fdbBrm.pipe_port, portLower.Ctag, true, numBrmOnPort(fdbBri.portIfindex))
 		portLower.Devtype = xeth.XETH_DEVTYPE_LINUX_VLAN_BRIDGE_PORT
 	}
@@ -204,7 +207,7 @@ func ProcessChangeUpper(msg *xeth.MsgChangeUpper, action vnet.ActionType, v *vne
 
 func GetBridgeBySi(si vnet.Si) (br *bridgeEntry) {
 	for _, b := range bridgeByStag {
-		bsi := vnet.SiByIfindex[b.port.Ifindex]
+		bsi, _ := vnet.Ports.GetSiByIndex(b.port.Ifindex)
 		if bsi == si {
 			br = b
 			break
@@ -227,7 +230,7 @@ func SetBridge(stag uint16, ifname string) *vnet.PortEntry {
 		br._macToIfindex = make(map[Address]int32)
 		bridgeByStag[stag] = br
 	}
-	pe := vnet.SetPort(ifname)
+	pe := vnet.Ports.SetPort(ifname)
 	if pe.Stag != 0 {
 		if pe.Stag != stag {
 			dbgvnet.Bridge.Logf("br stag changed %v -> %v", pe.Stag, stag) // FIXME update br
@@ -242,7 +245,7 @@ func UnsetBridge(stag uint16) {
 	br := bridgeByStag[stag]
 	if br != nil {
 		dbgvnet.Bridge.Logf("delete br %v, stag %v/%v", br.port.Ifname, stag, br.port.Stag)
-		vnet.UnsetPort(br.port.Ifname)
+		vnet.Ports.UnsetPort(br.port.Ifname)
 		br.port = nil
 		delete(bridgeByStag, stag)
 	}

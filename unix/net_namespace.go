@@ -548,7 +548,7 @@ func (ns *net_namespace) add_del_interface(m *Main, msg *netlink.IfInfoMessage) 
 		if !FdbOn {
 			// If this is a new link created after goes is up - ignore it
 			// since we don't handle dynamic port-provisioning (via ethtool) yet.
-			if _, found := vnet.Ports[msg.Attrs[netlink.IFLA_IFNAME].String()]; !found &&
+			if _, found := vnet.Ports.GetPortByName(msg.Attrs[netlink.IFLA_IFNAME].String()); !found &&
 				msg.InterfaceKind() != netlink.InterfaceKindVlan {
 				if false {
 					fmt.Printf("add_del_interface(): Interface created dynamically - ignored %s (%s)\n",
@@ -716,7 +716,7 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 			si.SetId(m.v, vnet.IfId(vlanid))
 
 			ethernet.StartFromFeReceivers()
-			br := vnet.PortsByIndex[int32(ifindex)]
+			br, _ := vnet.Ports.GetPortByIndex(int32(ifindex))
 			if br != nil {
 				dbgfdb.Ifinfo.Log("Add br",
 					ifname, vlanid, ifindex, si, br.Stag, br.StationAddr)
@@ -739,7 +739,7 @@ func (ns *net_namespace) addDelMk1Interface(m *Main, isDel bool, ifname string, 
 			if devtype == xeth.XETH_DEVTYPE_LINUX_BRIDGE {
 				ns.m.m.v.DelSwIf(intf.si)
 
-				br := vnet.PortsByIndex[int32(ifindex)]
+				br, _ := vnet.Ports.GetPortByIndex(int32(ifindex))
 				if br != nil {
 					dbgfdb.Ifinfo.Log("Del br",
 						ifname, vlanid, ifindex, intf.si, br.Stag, br.StationAddr)
@@ -928,7 +928,7 @@ func (m *net_namespace_main) set_si(intf *net_namespace_interface, si vnet.Si) {
 		m.interface_by_si = make(map[vnet.Si]*net_namespace_interface)
 	}
 	m.interface_by_si[si] = intf
-	m.m.v.SetSiByIfindex(intf.ifindex, si)
+	vnet.Ports.SetSiByIfindex(int32(intf.ifindex), si)
 }
 
 func (m *net_namespace_main) RegisterHwInterface(h vnet.HwInterfacer) {
